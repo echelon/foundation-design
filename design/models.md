@@ -295,9 +295,10 @@ No-API callouts: **Suno** (v5.5 — no public API; "exploring" one as of 2026-07
 | `tripo_v2_5`                      | Tripo v2.5                | `tripo3d/tripo/v2.5/image-to-3d`                 |
 | `tripo_h3_1`                      | Tripo H3.1                | `tripo3d/h3.1/...`                               |
 | `hyper3d_rodin_v2_5`              | Rodin V2.5                | `fal-ai/hyper3d/rodin/v2.5`                      |
-| `meshy_v6`                        | Meshy 6                   | `fal-ai/meshy/v6/...` (+rigging)                 |
+| `meshy_v6`                        | Meshy 6                   | `fal-ai/meshy/v6/...` — fullest 3D-utility suite (rig/animate/remesh/UV/retexture) |
 | `triposr`                         | TripoSR                   | `fal-ai/triposr` (OSS)                           |
 | `meta_sam3d_objects`              | SAM 3D Objects            | `fal-ai/sam-3/3d-objects`                        |
+| `anything_world_animate`          | Animate Anything          | Anything World API (experimental)                |
 
 ## 8. World & splat models
 
@@ -313,6 +314,10 @@ demo, no API. ArtCraft already has `worldlabs_api_client` bindings to adapt.
 | `worldlabs_marble_v1_1`           | Marble 1.1                | `marble-1.1` (World API, default)                |
 | `worldlabs_marble_v1_1_plus`      | Marble 1.1 Plus           | `marble-1.1-plus` (larger world scale)           |
 | `tencent_hunyuan_world_v1`        | HunyuanWorld 1.0          | `fal-ai/hunyuan_world/image-to-world`            |
+| `spaitial_echo_v1`                | SpAItial Echo-1           | Echo API — hosted, exports SPZ/PLY/SOG           |
+| `spaitial_echo_v2`                | SpAItial Echo-2           | Echo API + semantic world editing                |
+| `dreamgaussian`                   | DreamGaussian             | `mareksagan/dreamgaussian` (OSS)                 |
+| `lgm`                             | LGM (Large Gaussian Model)| OSS weights (hosted API TBD)                     |
 
 ## 9. Language models
 
@@ -598,7 +603,7 @@ Definitions in §11.
 | `ace_step`                        | text_to_music                                                   |
 | `sonauto_v2`                      | text_to_music                                                   |
 
-### Mesh / world models
+### Mesh models
 
 | Model                             | Modalities                                                    |
 | --------------------------------- | -------------------------------------------------------------- |
@@ -607,17 +612,32 @@ Definitions in §11.
 | `tencent_hunyuan3d_v3_1_pro`      | text_to_mesh, image_to_mesh, retopology                         |
 | `tencent_hunyuan3d_v3_1_rapid`    | text_to_mesh, image_to_mesh                                     |
 | `microsoft_trellis`               | image_to_mesh                                                   |
-| `microsoft_trellis_v2`            | image_to_mesh                                                   |
+| `microsoft_trellis_v2`            | image_to_mesh, pbr_generation                                   |
 | `tripo_v2_5`                      | image_to_mesh                                                   |
-| `tripo_h3_1`                      | text_to_mesh, image_to_mesh                                     |
-| `hyper3d_rodin_v2_5`              | text_to_mesh, image_to_mesh                                     |
-| `meshy_v6`                        | text_to_mesh, image_to_mesh, retexture, rigging                 |
+| `tripo_h3_1`                      | text_to_mesh, image_to_mesh, rigging, animation, retexture, retopology |
+| `hyper3d_rodin_v2_5`              | text_to_mesh, image_to_mesh, retexture, pbr_generation          |
+| `meshy_v6`                        | text_to_mesh, image_to_mesh, retexture, rigging, animation, retopology, uv_unwrap |
 | `triposr`                         | image_to_mesh                                                   |
 | `meta_sam3d_objects`              | image_to_mesh                                                   |
+| `anything_world_animate`          | rigging, animation (only non-humanoid rig/animate API; experimental) |
+
+### Splat / world models (SPLIT from mesh 2026-07-05 — different media type)
+
+Marble outputs Gaussian splats (`.spz`) + meshes; splats are their own media type, never
+"mesh". Additional splat generators + the animation/rigging/texturing/PBR utility sweep are
+under research (`../reports/other-providers.md` when it lands); known OSS splat models added
+below.
+
+| Model                             | Modalities                                                    |
+| --------------------------------- | -------------------------------------------------------------- |
 | `worldlabs_marble_v1`             | text_to_world, image_to_world, video_to_world, panorama_to_world |
 | `worldlabs_marble_v1_1`           | text_to_world, image_to_world, video_to_world, panorama_to_world |
 | `worldlabs_marble_v1_1_plus`      | text_to_world, image_to_world, video_to_world, panorama_to_world |
 | `tencent_hunyuan_world_v1`        | image_to_world                                                  |
+| `spaitial_echo_v1`                | text_to_world, image_to_world                                   |
+| `spaitial_echo_v2`                | text_to_world, image_to_world, world_edit                       |
+| `dreamgaussian`                   | image_to_splat (OSS)                                            |
+| `lgm`                             | image_to_splat, text_to_splat (OSS, Large Gaussian Model)       |
 
 ### Language models
 
@@ -676,10 +696,16 @@ modalities).
 | `retexture`            | New textures on an existing mesh                                       |
 | `retopology`           | Clean topology of a mesh                                               |
 | `rigging`              | Skeleton/animation rig for a mesh                                      |
+| `text_to_splat`        | Prompt → Gaussian splat asset (.spz/.ply)                              |
+| `image_to_splat`       | Image → Gaussian splat asset                                           |
 | `text_to_world`        | Prompt → explorable 3D world (3DGS/mesh)                               |
 | `image_to_world`       | Image → explorable world                                               |
 | `video_to_world`       | Video → explorable world                                               |
 | `panorama_to_world`    | 360° panorama → world                                                  |
+| `pbr_generation`       | PBR material maps for a mesh                                           |
+| `animation`            | Animate a rigged/riggable 3D asset                                     |
+| `uv_unwrap`            | UV coordinates for a mesh                                              |
+| `world_edit`           | Semantic edit of a generated world (SpAItial Echo-2)                   |
 | `chat`                 | LLM chat completion                                                    |
 
 ## 12. Model aliases
@@ -700,24 +726,33 @@ Rules: aliases resolve at request admission; jobs always record the canonical sl
 can never collide with a canonical slug (compile-time test); each model's aliases appear in
 its agent docs.
 
-## 13. Snapshot pinning (provider sub-versions)
+## 13. Snapshot pinning (provider sub-versions) — DECIDED 2026-07-05
 
 **Sign-off:** _unsigned_
 
-Full analysis: `../reports/model-versioning.md`. Providers expose frozen dated builds
-("snapshots" — OpenAI's term: `gpt-4o-2024-08-06`; Anthropic's `-20250929`; xAI's dated
-builds; Cartesia's `sonic-3.5-2026-05-04`). Our rule: an optional trailing **date token**
-`_{yyyymmdd}` pins a snapshot; unpinned = the provider's rolling build. Snapshots are
-first-class catalog entries with their own pricing and deprecation status — never
-string-parsed at runtime.
+Decision: **`_snap_{version}`** marks a pinned snapshot; **`_latest`** is also supported as an
+explicit rolling alias. (Analysis retained in `../reports/model-versioning.md`.)
 
-| Unpinned (rolling)                | Pinned snapshot                            |
-| --------------------------------- | ------------------------------------------- |
-| `openai_gpt_v5_5`                 | `openai_gpt_v5_5_20260415`                  |
-| `anthropic_claude_sonnet_v5`      | `anthropic_claude_sonnet_v5_20260630`       |
-| `cartesia_sonic_v3_5`             | `cartesia_sonic_v3_5_20260504`              |
-| `xai_grok_imagine_video_v1_5`     | `xai_grok_imagine_video_v1_5_20260614`      |
+| Form                                       | Meaning                                            |
+| ------------------------------------------ | --------------------------------------------------- |
+| `anthropic_claude_sonnet_v5`               | Default: the provider's current/rolling build       |
+| `anthropic_claude_sonnet_v5_latest`        | Explicit rolling alias — same resolution as bare, for callers who want the intent visible in code |
+| `anthropic_claude_sonnet_v5_snap_20260630` | Pinned to the dated snapshot                        |
+| `bfl_flux_v1_dev_snap_a1b2c3d`             | Pinned to a non-date upstream version (hash/tag) — the marker makes non-date pins expressible |
 
-The 8-digit trailing token is reserved for snapshots (slug lint enforces it can only be the
-final token). Upstream retires a snapshot → catalog marks it `retired`, requests fail
-`provider_deprecated` with the migration target in the error details.
+Rules:
+
+- `snap` and `latest` are **reserved tokens** (slug lint: `snap` must be followed by exactly
+  one payload token and terminate the ID; `latest` must terminate the ID; neither may appear
+  in family/variant names).
+- Snapshots are first-class catalog entries (own pricing, own deprecation status) — never
+  string-parsed at runtime. `_latest` resolves through the alias map to the canonical bare
+  slug; jobs always record the canonical slug that actually ran.
+- Upstream retires a snapshot → catalog marks it `retired`, requests fail
+  `provider_deprecated` with the migration target in the error details.
+
+**v1 scope note:** we may or may not ship any pinned snapshots (or the `_latest` alias) in
+version one — most launch providers work fine on rolling builds. The point of deciding now is
+to keep the design space wide open: the lint rules, alias machinery, and catalog shape all
+accommodate snapshots from day one, so adding the first one is a catalog entry, not a naming
+crisis.

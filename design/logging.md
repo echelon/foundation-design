@@ -7,6 +7,12 @@
 **Status:** living document (2026-07-05). Owns the user-facing logs product: what we capture,
 the tables (moved here from `schema.md` §5), truncation/redaction, retention, and the API.
 
+**North star: Stripe's developer-facing logging.** Stripe's Dashboard → Developers → Logs /
+Events experience is the bar — every request visible with full request/response payloads,
+filterable, linked from errors via request IDs, friendly enough that debugging rarely needs
+support. Our users should be able to see *everything that happens* to their requests and
+self-serve their debugging the same way.
+
 ---
 
 ## 1. What we capture (per job, correlated by `job_id`)

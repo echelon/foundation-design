@@ -1,3 +1,10 @@
+# RELAY is your favorite name
+
+**Status note (bt, 2026-07-05): "Relay is a fantastic name" — current favorite, returning to
+this later. "Gateway" is a close second.**
+
+---
+
 # Product/API name ideas: the "router"-shaped word
 
 Report, 2026-07-05. Premise: company = **Foundation**; we want a product/API name with the

@@ -29,93 +29,10 @@ Conventions:
 
 **Sign-off:** _unsigned_
 
-### accounts  (`acct_`)
-
-| column          | type        | notes                                        |
-| --------------- | ----------- | -------------------------------------------- |
-| id              | text PK     | `acct_...`                                   |
-| name            | text        | display name                                 |
-| slug            | text UNIQUE | for console URLs                             |
-| billing_email   | text        |                                              |
-| api_version     | date        | Stripe-style pin, set at first API use       |
-| status          | text        | `active \| suspended \| closed`              |
-| created_at      | timestamptz |                                              |
-| updated_at      | timestamptz |                                              |
-
-### users  (`user_`)
-
-| column            | type        | notes                                      |
-| ----------------- | ----------- | ------------------------------------------ |
-| id                | text PK     | `user_...`                                 |
-| email             | text UNIQUE | citext behavior via lower-index            |
-| email_verified_at | timestamptz | null = unverified                          |
-| password_hash     | text        | argon2id                                   |
-| display_name      | text        |                                            |
-| totp_secret       | text        | null; encrypted at rest when set           |
-| created_at        | timestamptz |                                            |
-| updated_at        | timestamptz |                                            |
-| deleted_at        | timestamptz | soft delete                                |
-
-### account_members  (`mem_`)
-
-| column      | type        | notes                                  |
-| ----------- | ----------- | -------------------------------------- |
-| id          | text PK     | `mem_...`                              |
-| account_id  | text FK     | → accounts                             |
-| user_id     | text FK     | → users                                |
-| role        | text        | `admin \| member`                      |
-| created_at  | timestamptz |                                        |
-|             |             | UNIQUE (account_id, user_id)           |
-
-Sign-up creates a user AND an account with that user as admin. Everything hangs off
-`account_id`, never bare `user_id` — teams are day one.
-
-### invitations  (`inv_`)
-
-| column       | type        | notes                                 |
-| ------------ | ----------- | ------------------------------------- |
-| id           | text PK     | `inv_...`                             |
-| account_id   | text FK     | → accounts                            |
-| email        | text        | invitee                               |
-| role         | text        | `admin \| member`                     |
-| token_hash   | text        | sha256 of emailed token               |
-| invited_by   | text FK     | → users                               |
-| expires_at   | timestamptz |                                       |
-| accepted_at  | timestamptz | null until accepted                   |
-| accepted_by  | text FK     | → users, null                         |
-| created_at   | timestamptz |                                       |
-
-### sessions  (`sess_`)
-
-| column      | type        | notes                              |
-| ----------- | ----------- | ---------------------------------- |
-| id          | text PK     | `sess_...`                         |
-| user_id     | text FK     | → users                            |
-| token_hash  | text        | sha256 of cookie value             |
-| ip          | inet        |                                    |
-| user_agent  | text        |                                    |
-| expires_at  | timestamptz |                                    |
-| revoked_at  | timestamptz | null                               |
-| created_at  | timestamptz |                                    |
-
-### api_keys  (`key_`; secret shape `foundation_api_...`, shown once at creation)
-
-| column       | type        | notes                                              |
-| ------------ | ----------- | -------------------------------------------------- |
-| id           | text PK     | `key_...`                                          |
-| account_id   | text FK     | → accounts                                         |
-| created_by   | text FK     | → users — who made it                              |
-| title        | text        | **immutable after creation**                       |
-| description  | text        | null; editable any time                            |
-| key_prefix   | text        | `foundation_api_` + first 6 payload chars, for console display |
-| key_hash     | text        | sha256 of full secret; secret never stored         |
-| last_used_at | timestamptz | coarse-grained update (throttled)                  |
-| expires_at   | timestamptz | **null = no expiry**                               |
-| revoked_at   | timestamptz | null                                               |
-| created_at   | timestamptz |                                                    |
-
-Unscoped for now. Future usage limits: additive nullable columns or a `key_limits` side
-table — nothing reserved now, nothing blocks it.
+**Moved to `accounts.md` (2026-07-05):** accounts, users, **user_identities** (new — SSO:
+Google + GitHub), account_members, invitations (now code + magic link), sessions, api_keys,
+email_verifications, password_resets — plus the signup, invite, and identity-linking flows.
+What remains in this section:
 
 ### end_users  (`enduser_`) — our customers' customers (DECIDED 2026-07-05; see `end-users.md`)
 
@@ -131,17 +48,6 @@ table — nothing reserved now, nothing blocks it.
 
 Always optional on requests; auto-upserted on first sight. Never PII by our instruction —
 customers send their own stable IDs or hashes.
-
-### email_verifications / password_resets  (`everif_` / `pwreset_`)
-
-| column      | type        | notes                          |
-| ----------- | ----------- | ------------------------------ |
-| id          | text PK     |                                |
-| user_id     | text FK     | → users                        |
-| token_hash  | text        |                                |
-| expires_at  | timestamptz |                                |
-| used_at     | timestamptz | null                           |
-| created_at  | timestamptz |                                |
 
 ---
 
@@ -272,103 +178,11 @@ run_after FOR UPDATE SKIP LOCKED LIMIT n`. Lowered fillfactor + aggressive autov
 
 **Sign-off:** _unsigned_
 
-Policy (decided): **charge at enqueue, price fixed for the job's lifetime, hard 402, no
-negative balances.** Failure/cancel-before-dispatch → full refund entry.
-
-### stripe_customers  (`cust_`)
-
-| column              | type        | notes                     |
-| ------------------- | ----------- | ------------------------- |
-| id                  | text PK     | `cust_...`                |
-| account_id          | text FK     | UNIQUE → accounts         |
-| stripe_customer_id  | text UNIQUE | `cus_...` at Stripe       |
-| created_at          | timestamptz |                           |
-
-### payment_methods  (`pm_`)
-
-| column                    | type        | notes                        |
-| ------------------------- | ----------- | ---------------------------- |
-| id                        | text PK     | `pm_...` (ours)              |
-| account_id                | text FK     | → accounts                   |
-| stripe_payment_method_id  | text        | theirs                       |
-| brand                     | text        | `visa`, …                    |
-| last4                     | text        |                              |
-| exp_month                 | int         |                              |
-| exp_year                  | int         |                              |
-| is_default                | bool        |                              |
-| status                    | text        | `active \| detached`         |
-| created_at                | timestamptz |                              |
-
-### ledger_entries  (`txn_`) — APPEND-ONLY, the source of truth for money
-
-| column                    | type        | notes                                                |
-| ------------------------- | ----------- | ---------------------------------------------------- |
-| id                        | text PK     | `txn_...`                                             |
-| account_id                | text FK     | → accounts                                            |
-| amount_micros             | bigint      | signed: + credit, − debit                             |
-| entry_type                | text        | `topup \| job_charge \| job_refund \| adjustment \| promo \| auto_refill` |
-| job_id                    | text FK     | → jobs; null for non-job entries                      |
-| stripe_payment_intent_id  | text        | null; for topups/auto-refills                         |
-| balance_after_micros      | bigint      | written under the account balance row lock            |
-| memo                      | text        | null                                                  |
-| idempotency_key           | text        | UNIQUE, null                                          |
-| created_at                | timestamptz |                                                       |
-
-Never UPDATE/DELETE. Invariant (reconciliation task asserts): `account_balances.balance_micros
-== SUM(amount_micros)` per account.
-
-### account_balances
-
-| column          | type        | notes                                                  |
-| --------------- | ----------- | ------------------------------------------------------- |
-| account_id      | text PK/FK  | → accounts                                               |
-| balance_micros  | bigint      | cache; mutated only in the same txn as a ledger insert, under `SELECT ... FOR UPDATE` |
-| updated_at      | timestamptz |                                                          |
-
-(No `reserved_micros` — holds were removed with the charge-at-enqueue decision.)
-
-### auto_refill_rules  (`refill_`)
-
-| column               | type        | notes                             |
-| -------------------- | ----------- | --------------------------------- |
-| id                   | text PK     | `refill_...`                      |
-| account_id           | text FK     | UNIQUE → accounts (one rule)      |
-| enabled              | bool        |                                   |
-| threshold_micros     | bigint      | trigger when balance drops below  |
-| refill_amount_micros | bigint      | amount to charge the card         |
-| payment_method_id    | text FK     | → payment_methods                 |
-| daily_max_micros     | bigint      | runaway-card safety               |
-| last_triggered_at    | timestamptz | null                              |
-| created_at           | timestamptz |                                   |
-| updated_at           | timestamptz |                                   |
-
-### spend_limits  (`limit_`)
-
-| column        | type        | notes                                |
-| ------------- | ----------- | ------------------------------------ |
-| id            | text PK     | `limit_...`                          |
-| account_id    | text FK     | → accounts                           |
-| window        | text        | `weekly \| monthly`                  |
-| limit_micros  | bigint      |                                      |
-| behavior      | text        | `block` (only option for now)        |
-| created_by    | text FK     | → users                              |
-| created_at    | timestamptz |                                      |
-| updated_at    | timestamptz |                                      |
-
-Enforced at admission: rolling-window SUM of `job_charge` entries (indexed on
-(account_id, entry_type, created_at)); rollup cache if/when this gets hot.
-
-### stripe_events  (`sevt_`)
-
-| column           | type        | notes                        |
-| ---------------- | ----------- | ---------------------------- |
-| id               | text PK     | `sevt_...`                   |
-| stripe_event_id  | text UNIQUE | dedupe                       |
-| event_type       | text        |                              |
-| payload          | jsonb       |                              |
-| processed_at     | timestamptz | null until handled           |
-| error            | text        | null                         |
-| created_at       | timestamptz |                              |
+**Moved to `payments.md` (2026-07-05):** stripe_customers, payment_methods, ledger_entries,
+account_balances, auto_refill_rules, spend_limits, stripe_events — plus the money model
+(prepaid dollar balance, no "credits"), Stripe Checkout flows, webhook handling, and
+auto-refill mechanics. Policy recap only: charge at enqueue, price fixed for the job's
+lifetime, hard 402, no negative balances.
 
 ---
 
@@ -417,25 +231,11 @@ moved to **`logging.md`** (2026-07-05), which owns the logs product: truncation
 
 ---
 
-## 6. The admission transaction (the part to scrutinize)
+## 6. The admission transaction
 
 **Sign-off:** _unsigned_
 
-```
-BEGIN;
-  SELECT balance_micros FROM account_balances WHERE account_id = $1 FOR UPDATE;
-  -- balance < cost  →  ROLLBACK, return 402
-  -- spend-limit window sum + cost > limit  →  ROLLBACK, return 402 (limit variant)
-  INSERT INTO ledger_entries (…, amount_micros = -cost, entry_type = 'job_charge', job_id, balance_after_micros);
-  UPDATE account_balances SET balance_micros = balance_micros - cost;
-  INSERT INTO jobs (…, charged_micros = cost, status = 'queued');
-  INSERT INTO queue_tasks (task_type = 'dispatch_job', payload = {job_id});
-COMMIT;
-```
-
-Refund path (failure/expiry/cancel-before-dispatch) is the mirror image with
-`entry_type = 'job_refund'` and `jobs.refunded_micros` set. Both paths are idempotent per job
-(ledger idempotency_key = `charge:{job_id}` / `refund:{job_id}`).
+Moved to `payments.md` §6 (with the refund mirror and LLM exception).
 
 ---
 
@@ -443,10 +243,26 @@ Refund path (failure/expiry/cancel-before-dispatch) is the mirror image with
 
 **Sign-off:** _unsigned_
 
-| Table                  | Prefix     | Defined in     |
-| ---------------------- | ---------- | -------------- |
-| request_logs           | `rlog_`    | `logging.md`   |
-| provider_calls         | `pcall_`   | `logging.md`   |
-| webhook_deliveries     | `whd_`     | `logging.md`   |
-| usage_rollups          | `roll_`    | `rankings.md`  |
-| end_user_limits (future) | `eulimit_` | `end-users.md` |
+| Table                    | Prefix      | Defined in      |
+| ------------------------ | ----------- | --------------- |
+| accounts                 | `acct_`     | `accounts.md`   |
+| users                    | `user_`     | `accounts.md`   |
+| user_identities          | `ident_`    | `accounts.md`   |
+| account_members          | `mem_`      | `accounts.md`   |
+| invitations              | `inv_`      | `accounts.md`   |
+| sessions                 | `sess_`     | `accounts.md`   |
+| api_keys                 | `key_`      | `accounts.md`   |
+| email_verifications      | `everif_`   | `accounts.md`   |
+| password_resets          | `pwreset_`  | `accounts.md`   |
+| stripe_customers         | `cust_`     | `payments.md`   |
+| payment_methods          | `pm_`       | `payments.md`   |
+| ledger_entries           | `txn_`      | `payments.md`   |
+| account_balances         | —           | `payments.md`   |
+| auto_refill_rules        | `refill_`   | `payments.md`   |
+| spend_limits             | `limit_`    | `payments.md`   |
+| stripe_events            | `sevt_`     | `payments.md`   |
+| request_logs             | `rlog_`     | `logging.md`    |
+| provider_calls           | `pcall_`    | `logging.md`    |
+| webhook_deliveries       | `whd_`      | `logging.md`    |
+| usage_rollups            | `roll_`     | `rankings.md`   |
+| end_user_limits (future) | `eulimit_`  | `end-users.md`  |
