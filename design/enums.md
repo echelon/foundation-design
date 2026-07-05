@@ -42,6 +42,12 @@ pub enum VideoModel {
   exhaustive `assert_serialization` list.
 - Model enums additionally get: `media_type()`, `provider()` (via catalog), and a
   `FromStr` that consults the alias map.
+- **Model enums are generated, not hand-written (DECIDED 2026-07-05):** `cargo xtask codegen`
+  parses the canonical `models.md` tables and emits plain, checked-in Rust (enum + serde
+  renames + `slug()`/`display_name()`/`modalities()` + the tests above) under
+  `crates/core/enums/src/generated/`, with a CI diff gate. No macros, no `build.rs` — see
+  `../reports/enums-alternatives.md` "Recommendation v2" for the rationale and samples.
+  Supporting enums (statuses etc.) stay hand-written — they're small and carry logic.
 
 ## The model enums
 
@@ -107,7 +113,7 @@ compile-time test).
 | `Modality`        | `text_to_image  image_to_image  text_to_video  image_to_video  reference_to_video  video_to_video  keyframe_to_video  text_to_audio  audio_to_audio  speech_to_text  text_to_mesh  image_to_mesh  text_to_splat  image_to_splat  chat` |
 | `JobStatus`       | `queued  dispatched  running  succeeded  failed  canceled  expired`                             |
 | `JobEventType`    | `created  charged  dispatched  provider_accepted  poll_tick  provider_completed  output_ingested  webhook_sent  refunded  failed  canceled` |
-| `ApiShape`        | `granular  unified  omni  chat`                                                                 |
+| `ApiShape`        | `granular  unified  any  chat`                                                                  |
 | `RequestSource`   | `api  dashboard  mcp`                                                                           |
 | `LedgerEntryType` | `topup  job_charge  job_refund  adjustment  promo  auto_refill`                                 |
 | `PriceUnit`       | `per_call  per_image  per_video_second  per_audio_second  per_megapixel  per_second_compute  per_million_tokens_in  per_million_tokens_out  per_mesh  per_splat` |

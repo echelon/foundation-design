@@ -26,7 +26,7 @@ the OpenAPI spec, and the docs pages). Following the llmstxt.org convention:
 | `/llms.txt`                          | Index: one-paragraph product overview, auth in 3 lines, link list to everything below |
 | `/llms-full.txt`                     | The whole corpus concatenated (for agents that slurp one file)        |
 | `/apis/llms.txt`                     | Platform guide: auth, the three API shapes, cost twins, job lifecycle, polling vs webhooks (no sync mode), idempotency, errors incl. the 402 body, versioning |
-| `/apis/generate/{media}/llms.txt`    | Omni guide per media type: the superset schema, param coercion rules, model comparison table (params × price × speed) |
+| `/apis/generate/{media}/llms.txt`    | Any-API guide per media type: the superset schema, param coercion rules, model comparison table (params × price × speed) |
 | `/models/{model_id}/llms.txt`        | Everything for ONE model: canonical ID + aliases, modalities, per-modality JSON Schema rendered as a param table, pricing, limits, curl + TypeScript + Python examples (submit → poll → download, and webhook variant), model-specific gotchas |
 | `/openapi.json`                      | Already emitted by utoipa; linked from the index                      |
 | MCP server                           | `generate`/`cost`/`get_job`/`list_models` as tools — the catalog gives us the tool schemas for free. Now designed: see `mcp.md` |

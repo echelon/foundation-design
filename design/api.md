@@ -100,9 +100,12 @@ returns the exact fixed price the matching generate call would charge — same v
 coercion, no job, no charge. (Media prices are deterministic at submission and never change
 after enqueue.)
 
+Shape 3 (model-as-parameter, superset schema) is branded the **Any API** — DECIDED
+2026-07-05, replacing "omni" everywhere (analysis: `../reports/omni-api-naming.md`).
+
 | Shape                | Generate                                       | Cost                                       |
 | -------------------- | ---------------------------------------------- | ------------------------------------------ |
-| Omni (per media)     | `POST /v1/generate/video`                      | `POST /v1/cost/video`                      |
+| Any (per media)      | `POST /v1/generate/video`                      | `POST /v1/cost/video`                      |
 |                      | `POST /v1/generate/image`                      | `POST /v1/cost/image`                      |
 |                      | `POST /v1/generate/audio`                      | `POST /v1/cost/audio`                      |
 |                      | `POST /v1/generate/mesh`                       | `POST /v1/cost/mesh`                       |
@@ -110,7 +113,7 @@ after enqueue.)
 | Unified (per model)  | `POST /v1/generate/models/{model}`             | `POST /v1/cost/models/{model}`             |
 | Granular             | `POST /v1/generate/models/{model}/{modality}`  | `POST /v1/cost/models/{model}/{modality}`  |
 
-- Omni body: `{ "model": "kling_video_v3_pro", ...superset params... }` — irrelevant params
+- Any body: `{ "model": "kling_video_v3_pro", ...superset params... }` — irrelevant params
   pruned/coerced; adjustments reported in the response and job record.
 - Unified body: model's own param union; modality inferred from present params, echoed back as
   `resolved_modality`.

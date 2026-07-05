@@ -5,6 +5,8 @@ Report, 2026-07-05. Question: the MySQL habit was `int unsigned auto_increment` 
 Does Postgres need that? Answer: **no — the prefixed string PK alone is sufficient**, with one
 optional nuance for the ledger. Reasoning below, including "what if we need ordered results!?"
 
+**Brandon note: I'm still not sure about this.**
+
 ---
 
 ## Why MySQL wanted the int (and why Postgres doesn't)
@@ -53,3 +55,40 @@ Covered, three ways:
 - If a specific table someday measurably suffers (billions of rows, join-heavy), the targeted
   fix is an internal surrogate int on THAT table — a migration, not a redesign. We are not
   pre-paying that complexity across the whole schema.
+
+---
+
+## Follow-up (2026-07-05): meshing Stripe prefixes with ULID
+
+Short answer: they mesh perfectly — our format IS "prefix + ULID." The payload spec:
+
+- A ULID is exactly **128 bits**: 48-bit unix-millisecond timestamp + **80 bits of
+  randomness**, canonically encoded as **exactly 26 Crockford base32 characters** (26 × 5 =
+  130 bits of capacity for 128 bits, so the first character can only be `0–7`).
+- Ours: `{prefix}_{26-char ULID}` → `job_01j0qs3fw9x7k2m5n8p1r4t7v0`. The `01j0qs3fw9`
+  leading section is the timestamp; sortable, index-friendly.
+
+**Enough entropy?** 80 random bits *per millisecond*. Collision requires two IDs in the SAME
+millisecond among 2⁸⁰ ≈ 1.2×10²⁴ values. Even a sustained 100,000 IDs per millisecond
+(≈ 100M/sec — absurdly beyond us) gives a per-ms birthday probability of ~4×10⁻¹⁵; across a
+year that's still ~10⁻⁴ cumulative at that impossible rate, and reality is 5+ orders of
+magnitude below it. Plus every PK is UNIQUE — the theoretical collision is one retried
+insert. Verdict: yes, comfortably, through trillions of rows.
+
+**Fixed length?** Yes, per entity type:
+
+| Property                | Answer                                                          |
+| ----------------------- | ---------------------------------------------------------------- |
+| Payload length          | Always exactly 26 chars (canonical ULID text)                    |
+| Total length            | `len(prefix) + 1 + 26` — constant per type: `job_` → 31, `acct_` → 32, `enduser_` → 35 |
+| Globally constant?      | Only if we padded prefixes to equal width — don't; per-type constancy is what validation and column sizing care about, and `text` doesn't care at all |
+| Charset                 | Crockford base32: `0-9 a-hjkmnp-tv-z` — no `i l o u`, case-insensitive by spec (we emit lowercase only), no vowel-slang accidents beyond that |
+
+Validation regex per type is therefore trivial and total:
+`^job_[0-7][0-9a-hjkmnp-tv-z]{25}$`.
+
+**One ULID nuance to decide:** the spec's optional "monotonic" mode increments the random
+part for same-millisecond IDs from one generator (strict per-process ordering). Skip it —
+it adds shared-state contention and cross-process it guarantees nothing; our ordering story
+(§ above: ms-level via the timestamp, `seq` column if the ledger needs strictness) already
+covers it.

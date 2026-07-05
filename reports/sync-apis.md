@@ -66,3 +66,45 @@ If we *did* hold lots of requests open (we still will for LLM SSE):
 
 Conclusion: the decision to drop media sync isn't capacity-driven — Axum could hold them — it
 is a product-surface decision. Axum remains the right choice for the LLM streaming we do keep.
+
+---
+
+## Follow-up (2026-07-05): "OpenRouter is sync — does that break our plan?"
+
+Three questions, three answers:
+
+**1. Can we do everything OpenRouter does and bolt sync on later?**
+
+We already do everything OpenRouter does, today, in the current design — because the no-sync
+decision never applied to LLMs. `POST /v1/chat/completions` is a held-open response with SSE
+streaming, exactly OpenRouter's shape. The async-only rule covers *media jobs*, where
+OpenRouter themselves went async (their video API). So there is no gap to close.
+
+And yes, media sync bolts on cleanly later if we ever want it: `Prefer: wait=N` is purely
+additive — same endpoint, same request body, same Job envelope in the response (just in a
+terminal state). No schema change, no new URL, no versioning event. The one real cost arrives
+only when we implement it: held requests pin work to a process, so deploys/restarts need
+drain logic. That cost is deferred until the day we opt in, which is exactly why the header
+is reserved and unimplemented.
+
+**2. Are there async-first LLM alternatives to OpenRouter?**
+
+No major async-first LLM *gateway* exists — the async LLM surface lives at the labs:
+
+| Offering                       | Shape                                                      |
+| ------------------------------ | ------------------------------------------------------------ |
+| OpenAI Batch API               | Upload JSONL → poll (24h window, ~50% discount) + completion webhook |
+| Anthropic Message Batches      | Create → poll `processing_status` → fetch results JSONL      |
+| OpenAI background mode         | `background: true` on Responses → poll the response id (built for long agentic runs) |
+| Vertex AI batch prediction     | GCS in → GCS out, operation polling                          |
+
+Gateways (OpenRouter, AtlasCloud, Together, etc.) are uniformly sync for LLMs. That's a
+**gap**: a gateway-level batch/deferred LLM API (queue it, webhook me, discount me) would be
+differentiated — and it would reuse our media job pipeline verbatim. Good candidate for the
+post-launch roadmap; the `/v1/batch` path is already reserved.
+
+**3. Does OpenRouter have any async LLM surface?**
+
+No. LLM side: no webhooks, no batch, no deferred mode — the only async thing in their product
+is the media (video) jobs API. Their `GET /v1/generation?id=` is post-hoc *accounting* lookup,
+not a pending-work poll.

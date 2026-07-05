@@ -50,8 +50,9 @@ Monthly `PARTITION BY RANGE (created_at)`; minimal indexes: (account_id, created
 | -------------------- | ----------- | ---------------------------------------- |
 | id                   | text PK     | `rlog_...`                               |
 | account_id           | text FK     | → accounts                               |
-| api_key_id           | text FK     | null (dashboard/mcp sessions)            |
-| job_id               | text FK     | null for non-job endpoints               |
+| api_key_id           | text FK     | → api_keys; null when cookie-authed      |
+| session_id           | text FK     | → sessions; set for dashboard/console requests (exactly one of api_key_id / session_id is set) |
+| job_id               | text FK     | → jobs; see note below                   |
 | end_user_id          | text FK     | → end_users; null                        |
 | source               | text        | `api \| dashboard \| mcp`                |
 | method               | text        |                                          |
@@ -69,6 +70,14 @@ Monthly `PARTITION BY RANGE (created_at)`; minimal indexes: (account_id, created
 | response_body_bytes  | bigint      |                                          |
 | latency_ms           | int         |                                          |
 | created_at           | timestamptz | partition key                            |
+
+**Why `job_id` is nullable (clarified 2026-07-05):** `request_logs` records EVERY API
+request, not just generations — `GET /v1/jobs`, key management, balance checks, auth, catalog
+reads. Those requests have no job by nature. The invariant is narrower and absolute: **every
+generation/chat/cost-charged request — from API key, dashboard sandbox, or MCP alike — always
+creates a job and its log row carries that job_id.** Dashboard/sandbox runs flow through the
+identical job pipeline (same billing, same statuses); they differ only in auth, which is why
+`session_id` (not `api_key_id`) identifies them here.
 
 ### provider_calls  (`pcall_`)
 

@@ -162,11 +162,11 @@ customers send their own stable IDs or hashes.
 | media_type           | text        | `image \| video \| audio \| mesh \| splat \| text`            |
 | model                | text        | canonical catalog slug, e.g. `kling_video_v3_pro`             |
 | modality             | text        | e.g. `image_to_video` (resolved, not necessarily requested)   |
-| api_shape            | text        | `granular \| unified \| omni \| chat`                         |
+| api_shape            | text        | `granular \| unified \| any \| chat`                          |
 | api_version          | date        | version the request came in on                                |
 | idempotency_key      | text        | null; UNIQUE (account_id, idempotency_key)                    |
 | request_params       | jsonb       | canonicalized post-coercion params                            |
-| param_adjustments    | jsonb       | what omni pruned/coerced                                      |
+| param_adjustments    | jsonb       | what the Any layer pruned/coerced                             |
 | status               | text        | `queued \| dispatched \| running \| succeeded \| failed \| canceled \| expired` |
 | failure_code         | text        | null; from the failure-code enum (`api.md` §2)                |
 | failure_message      | text        | null; human-readable                                          |

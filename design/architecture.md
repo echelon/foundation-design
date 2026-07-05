@@ -42,7 +42,7 @@ catalog IS the product. This replaces the earlier draft's `providers` / `models`
   static table (compile-time checked: unique slugs, unique prefixes, every model has ≥1
   modality, every modality has a price).
 - Per (model, modality): typed parameter struct → JSON Schema derived from the Rust types
-  (schemars or utoipa), defaults, coercion rules for the omni layer, price definition
+  (schemars or utoipa), defaults, coercion rules for the Any layer, price definition
   (unit + nano-USD rate + modifiers), provider route(s) in priority order.
 - Aliases (short forms, renames, competitor-ID migration) are code too: a static
   `alias → canonical` map with a uniqueness test (see `models.md` §aliases).
@@ -134,7 +134,7 @@ foundation/
 │   │   ├── kling/                  # HS256 JWT auth, create+poll, callback
 │   │   ├── xai/                    # Grok image (sync), Grok Imagine video (poll), chat
 │   │   └── vidu/                   # create+poll, callback, `Token` auth scheme
-│   ├── router/                     # omni param translation: canonical request → provider
+│   ├── router/                     # Any-API param translation: canonical request → provider
 │   │                               #   request; prune/coerce; modality inference
 │   ├── services/                   # business logic, DB-aware
 │   │   ├── jobs/                   # job state machine
@@ -255,7 +255,7 @@ product naming (see open questions).
    control). Leaning App Platform to start.
 3. LLM launch set: which providers first? (OpenAI + Anthropic + xAI is the natural trio given
    we're already writing those clients for media.)
-4. The "omni" product name — candidates and analysis in `../reports/omni-api-naming.md`;
-   docs keep saying "omni" until you pick.
+4. ~~The "omni" product name~~ — **DECIDED 2026-07-05: "Any" (the Any API)**; "omni" expunged
+   from the design docs (analysis: `../reports/omni-api-naming.md`).
 5. "Modality" vs "task" terminology — analysis in `models.md`; docs keep "modality" until you
    rule.
