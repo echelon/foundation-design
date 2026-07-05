@@ -1,8 +1,15 @@
 # Foundation — Initial Build Plan
 
-**Status:** Living document. First draft 2026-07-04. This describes the data model, code
+> **SUPERSEDED 2026-07-04 (same day):** the living design has been split into
+> `../design/architecture.md`, `../design/api.md`, `../design/schema.md`, and
+> `../design/models.md` and revised there per review (Axum + Postgres decided; catalog moved
+> from DB tables to code; prefixed string IDs as sole PKs; charge-at-enqueue billing with no
+> holds; `providers/` crate dir renamed `clients/`; cost/generate twin endpoints; LLMs pulled
+> into v1 scope). This file is kept as the first-draft record — do not edit.
+
+**Status:** Historical first draft, 2026-07-04. This describes the data model, code
 organization, tech choices, and API shape for an open-source model gateway (Fal / Replicate /
-OpenRouter competitor). Iterate here.
+OpenRouter competitor).
 
 > Naming note: "Foundation" is used as the project codename throughout. `api.example.dev` is a
 > placeholder base URL.
