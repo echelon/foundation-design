@@ -1,16 +1,18 @@
 # Architecture
 
 **Sign-off:** _unsigned_
-<!-- bt: replace "_unsigned_" with initials + date (e.g. "bt 2026-07-05") when approved.
-     Assistants: reset to _unsigned_ on any substantive edit. See ../CLAUDE.md. -->
+<!-- bt: initials + date when approved (e.g. "bt 2026-07-05"). Per-section sign-offs below;
+     the top one covers the whole document. Assistants: see ../CLAUDE.md. -->
 
 **Status:** living document. Split out of `../2026-07/2026-07-04-initial-build.md` on 2026-07-04.
-Siblings: `api.md` (endpoints), `schema.md` (tables), `models.md` (model IDs), `enums.md`
-(first-class enums), `agents.md` (agent-facing docs pipeline).
+Siblings: `api.md`, `schema.md`, `models.md`, `enums.md`, `agents.md`, `logging.md`, `mcp.md`,
+`end-users.md`, `rankings.md`.
 
 ---
 
 ## 1. Decided technology stack
+
+**Sign-off:** _unsigned_
 
 | Choice          | Decision                              | Notes                                                        |
 | --------------- | ------------------------------------- | ------------------------------------------------------------ |
@@ -29,6 +31,8 @@ recovery, standby nodes for HA, built-in PgBouncer connection pooling, private V
 
 ## 2. Catalog as code (DECIDED 2026-07-04)
 
+**Sign-off:** _unsigned_
+
 The model catalog — models, modalities, parameter schemas, provider routing, prices — is
 **declared in Rust, not stored in the database**. Code is versioned, reviewable, testable; the
 catalog IS the product. This replaces the earlier draft's `providers` / `models` /
@@ -41,7 +45,7 @@ catalog IS the product. This replaces the earlier draft's `providers` / `models`
   (schemars or utoipa), defaults, coercion rules for the omni layer, price definition
   (unit + nano-USD rate + modifiers), provider route(s) in priority order.
 - Aliases (short forms, renames, competitor-ID migration) are code too: a static
-  `alias → canonical` map with a uniqueness test.
+  `alias → canonical` map with a uniqueness test (see `models.md` §aliases).
 - Price changes, new models, deprecations = normal PRs + deploys. Jobs snapshot the price they
   were charged onto the job row (see `schema.md`), so history survives code changes and no
   historical price table is needed.
@@ -54,11 +58,15 @@ catalog IS the product. This replaces the earlier draft's `providers` / `models`
 
 ## 3. Identifiers (REVISED 2026-07-04)
 
+**Sign-off:** _unsigned_
+
 One ID per row: **the prefixed string is the primary key**. No internal numeric IDs.
+(Full integer-PK analysis: `../reports/identifiers.md`.)
 
 - Format: `{prefix}_{26-char Crockford base32 of 128 bits}`, e.g. `job_01j0qs3fw9x7k2m5n8p1r4t7v0`.
 - Layout is ULID-style: 48-bit millisecond timestamp + 80 random bits. Time-ordered high bits
-  keep B-tree inserts local (right-leaning appends, not random splits).
+  keep B-tree inserts local (right-leaning appends, not random splits), and make
+  `ORDER BY id` chronological.
 - Used everywhere: PKs, FKs, joins, logs, API responses. A bare ID in a log tells you what it
   is — that's the point.
 - Cost accepted: TEXT keys make PK/FK indexes roughly 3–4× larger than bigint and joins
@@ -69,10 +77,13 @@ One ID per row: **the prefixed string is the primary key**. No internal numeric 
   a unique constraint — a collision is a retried insert, not corruption. 128 bits is enough for
   trillions.
 - Prefix registry lives in `crates/core/ids` as one enum with a compile-time uniqueness test.
-  Current prefixes: see `schema.md` (one per table) plus `sk_live_` (API key secrets) and
-  `whsec_` (webhook signing secrets).
+  Current prefixes: see `schema.md` (one per table) plus secrets: `foundation_api_` (API keys)
+  and `foundation_whsec_` (webhook signing secrets) — service-declaring by design; the
+  `foundation` half swaps when the product is named.
 
 ## 4. Billing policy (DECIDED 2026-07-04)
+
+**Sign-off:** _unsigned_
 
 - **Payment at point of enqueue. The price of a job never changes after submission.**
 - Admission: in one transaction — `SELECT ... FOR UPDATE` the balance row; if
@@ -86,11 +97,13 @@ One ID per row: **the prefixed string is the primary key**. No internal numeric 
   `crates/core/money`.
 - Dashboard sandbox runs bill **identically** to API runs: same ledger, same logs, same jobs
   table, same 402. The only difference is auth (cookie vs API key), recorded on the job as
-  `source = dashboard | api`.
+  `source = dashboard | api | mcp`.
 - Spend visibility is a first-class product surface: every job row carries its cost + status;
-  `GET /v1/jobs` and the ledger endpoints power the console's spend views (see `api.md` §7).
+  `GET /v1/jobs` and the ledger endpoints power the console's spend views (see `api.md`).
 
 ## 5. Monorepo layout (REVISED: `providers` → `clients`; single api-server)
+
+**Sign-off:** _unsigned_
 
 ```
 foundation/
@@ -98,8 +111,8 @@ foundation/
 ├── rust-toolchain.toml
 ├── crates/
 │   ├── bin/
-│   │   ├── api-server/             # ONE service: public API + console API (axum)
-│   │   ├── worker/                 # queue consumer: dispatch/poll/webhook/ingest
+│   │   ├── api-server/             # ONE service: public API + console API + /mcp (axum)
+│   │   ├── worker/                 # queue consumer: dispatch/poll/webhook/ingest/rollups
 │   │   └── admin-cli/              # migrations, ops one-offs
 │   ├── core/
 │   │   ├── ids/                    # prefixed string ID types + prefix registry
@@ -128,18 +141,22 @@ foundation/
 │   │   ├── billing/                # ledger, auto-refill, spend limits, 402 admission
 │   │   ├── auth/                   # sessions, api keys, invitations
 │   │   ├── webhooks/               # outbound delivery + HMAC signing
-│   │   └── logging/                # debug-log product write path
+│   │   └── logging/                # debug-log product write path (see logging.md)
+│   ├── tools/
+│   │   └── docgen/                 # agent-docs generator (see agents.md)
 │   └── queue/                      # queue abstraction (Postgres impl now)
+├── generated/
+│   └── llms/                       # checked-in agent docs (see agents.md)
 ├── frontend/                       # Nx workspace → Netlify
 │   ├── apps/
-│   │   ├── www/                    # marketing
+│   │   ├── www/                    # marketing (+ public rankings page, see rankings.md)
 │   │   ├── docs/                   # model pages + sandbox + API docs (reads catalog.json)
 │   │   └── console/                # keys, billing, jobs, logs, team
 │   └── libs/
 │       ├── ui/
 │       ├── api-client/             # generated from our OpenAPI
 │       └── model-forms/            # JSON Schema → form renderer
-├── external/plan/                  # planning docs (this tree)
+├── external/claude_pairing/        # planning docs (this tree)
 ├── docs/                           # internal engineering docs
 └── infra/                          # docker-compose (pg, redis, minio-as-R2-stand-in), CI
 ```
@@ -152,6 +169,8 @@ deployment change, not a refactor. The `worker` is a separate deployable from da
 different scaling and restart characteristics).
 
 ## 6. Provider adapter seam
+
+**Sign-off:** _unsigned_
 
 ```rust
 trait ProviderAdapter {
@@ -168,6 +187,8 @@ expiries range from ~1 hour to 30 days); provider model IDs and credential pool 
 from the code catalog (§2).
 
 ## 7. LLMs: in scope for v1 (DECIDED 2026-07-04, pending your final word)
+
+**Sign-off:** _unsigned_
 
 Congruence check result: LLM serving APIs are congruent enough to build now. The OpenAI
 chat-completions wire format is the industry lingua franca — OpenRouter, AtlasCloud, xAI,
@@ -187,14 +208,19 @@ schemas — well-trodden adapter territory). Plan:
 
 ## 8. Retention (DECIDED 2026-07-04)
 
+**Sign-off:** _unsigned_
+
 - **Media outputs: kept forever.** Hot in R2 initially; migrate cold objects to
   R2 Infrequent Access (or equivalent) by age/access policy later. Durable hosting is a
   product feature (and a possible future product line: managed result hosting for customers).
 - **Logs: kept indefinitely, downsampled at scale.** Monthly partitions; when large, compact
   old partitions (drop full request/response bodies, keep the event skeleton + metadata).
   Partition-drop machinery exists from day one; the policy knob starts at "never".
+  Details: `logging.md`.
 
 ## 9. Postgres gotcha checklist (operational guardrails I own)
+
+**Sign-off:** _unsigned_
 
 Carried from the feedback doc — these get encoded as code review rules / infra defaults:
 
@@ -206,8 +232,12 @@ Carried from the feedback doc — these get encoded as code review rules / infra
 6. Every migration sets `lock_timeout`; `CREATE INDEX CONCURRENTLY` for anything on a live table.
 7. No `count(*)` on big tables in request paths — estimates or rollups.
 8. `text` not `varchar(n)`; `timestamptz` not `timestamp`; explicit `FOR UPDATE` on money paths, never isolation-level cleverness.
+9. **No native Postgres enums — DECIDED 2026-07-05.** Enum-shaped columns are `text` + CHECK,
+   with the closed set owned by the Rust enums (`enums.md`); CHECK lists generated from Rust.
 
 ## 10. API versioning (unchanged)
+
+**Sign-off:** _unsigned_
 
 Stripe model: date versions (`2026-07-04`), pinned per account at first use, per-request
 override header, edge transforms for old versions, `/v1/` URL constant. Header name blocked on
@@ -215,13 +245,17 @@ product naming (see open questions).
 
 ## 11. Open questions
 
-1. **Product name.** Meaning: several strings bake the name in permanently — the version
-   header (`Foundation-Version: 2026-07-04`), webhook signature header
-   (`Foundation-Signature`), user-agent we send upstream, Rust crate namespace, the
-   `catalog.json` artifact name, domains. "Foundation" is a placeholder; once you pick the
-   real name I'll sweep it through the docs. (Key prefixes like `sk_live_`/`job_` are
-   name-agnostic — no rename risk there.)
+**Sign-off:** _unsigned_
+
+1. **Product name.** Several strings bake the name in permanently — the `Foundation-Version`
+   and `Foundation-Signature` headers, the `foundation_api_` / `foundation_whsec_` secret
+   prefixes, user-agent we send upstream, Rust crate namespace, domains. "Foundation" is a
+   placeholder; once you pick the real name I'll sweep it through the docs.
 2. Which DO compute primitive: App Platform (simpler) vs Droplets + docker (cheaper, more
    control). Leaning App Platform to start.
 3. LLM launch set: which providers first? (OpenAI + Anthropic + xAI is the natural trio given
    we're already writing those clients for media.)
+4. The "omni" product name — candidates and analysis in `../reports/omni-api-naming.md`;
+   docs keep saying "omni" until you pick.
+5. "Modality" vs "task" terminology — analysis in `models.md`; docs keep "modality" until you
+   rule.

@@ -1,25 +1,33 @@
 # Database Schema
 
 **Sign-off:** _unsigned_
-<!-- bt: replace "_unsigned_" with initials + date (e.g. "bt 2026-07-05") when approved.
-     Assistants: reset to _unsigned_ on any substantive edit. See ../CLAUDE.md. -->
+<!-- bt: initials + date when approved (e.g. "bt 2026-07-05"). Per-section sign-offs below;
+     the top one covers the whole document. Assistants: see ../CLAUDE.md. -->
 
-**Status:** living document (2026-07-04). Postgres. Siblings: `architecture.md`, `api.md`, `models.md`.
+**Status:** living document (2026-07-05). Postgres. Siblings: `architecture.md`, `api.md`,
+`models.md`, `enums.md`, `logging.md`, `end-users.md`, `rankings.md`.
 
 Conventions:
 
 - Every `id` is `TEXT PRIMARY KEY`, format `{prefix}_{26-char Crockford of 128 bits}`,
-  ULID-style time-ordered. The prefix is listed with each table. No numeric IDs anywhere.
+  ULID-style time-ordered. The prefix is listed with each table. No numeric IDs anywhere
+  (analysis: `../reports/identifiers.md`).
 - All timestamps are `timestamptz`. `created_at` defaults to `now()`. Money is `BIGINT`
   micro-USD unless noted (`_nanos` = nano-USD unit rates).
 - **No catalog tables.** Models, modalities, schemas, routes, prices live in Rust
   (`crates/core/catalog`). Jobs snapshot pricing at enqueue. Provider credentials are
   deployment config, not rows.
-- Enum-ish columns are `TEXT` + CHECK constraint (values owned by `crates/core/enums`).
+- **No native Postgres enums (DECIDED 2026-07-05).** Enum-ish columns are `TEXT` + CHECK
+  constraint; the closed sets are owned by `crates/core/enums` and the CHECK lists are
+  generated from Rust.
+- High-volume log tables live in `logging.md`; public-rankings rollup tables live in
+  `rankings.md`; the pointer index is §7.
 
 ---
 
 ## 1. Identity & access
+
+**Sign-off:** _unsigned_
 
 ### accounts  (`acct_`)
 
@@ -90,7 +98,7 @@ Sign-up creates a user AND an account with that user as admin. Everything hangs 
 | revoked_at  | timestamptz | null                               |
 | created_at  | timestamptz |                                    |
 
-### api_keys  (`key_`; secret shape `sk_live_...`, shown once at creation)
+### api_keys  (`key_`; secret shape `foundation_api_...`, shown once at creation)
 
 | column       | type        | notes                                              |
 | ------------ | ----------- | -------------------------------------------------- |
@@ -99,7 +107,7 @@ Sign-up creates a user AND an account with that user as admin. Everything hangs 
 | created_by   | text FK     | → users — who made it                              |
 | title        | text        | **immutable after creation**                       |
 | description  | text        | null; editable any time                            |
-| key_prefix   | text        | first 12 chars of secret, for console display      |
+| key_prefix   | text        | `foundation_api_` + first 6 payload chars, for console display |
 | key_hash     | text        | sha256 of full secret; secret never stored         |
 | last_used_at | timestamptz | coarse-grained update (throttled)                  |
 | expires_at   | timestamptz | **null = no expiry**                               |
@@ -108,6 +116,21 @@ Sign-up creates a user AND an account with that user as admin. Everything hangs 
 
 Unscoped for now. Future usage limits: additive nullable columns or a `key_limits` side
 table — nothing reserved now, nothing blocks it.
+
+### end_users  (`enduser_`) — our customers' customers (DECIDED 2026-07-05; see `end-users.md`)
+
+| column        | type        | notes                                       |
+| ------------- | ----------- | ------------------------------------------- |
+| id            | text PK     | `enduser_...`                               |
+| account_id    | text FK     | → accounts                                  |
+| external_id   | text        | the customer's own id for this user, ≤256 chars |
+| first_seen_at | timestamptz |                                             |
+| last_seen_at  | timestamptz | throttled updates                           |
+| metadata      | jsonb       | customer-supplied, opaque to us             |
+|               |             | UNIQUE (account_id, external_id)            |
+
+Always optional on requests; auto-upserted on first sight. Never PII by our instruction —
+customers send their own stable IDs or hashes.
 
 ### email_verifications / password_resets  (`everif_` / `pwreset_`)
 
@@ -124,6 +147,8 @@ table — nothing reserved now, nothing blocks it.
 
 ## 2. Jobs & artifacts
 
+**Sign-off:** _unsigned_
+
 ### jobs  (`job_`)
 
 | column               | type        | notes                                                        |
@@ -132,7 +157,8 @@ table — nothing reserved now, nothing blocks it.
 | account_id           | text FK     | → accounts                                                    |
 | api_key_id           | text FK     | → api_keys; **null = dashboard session**                      |
 | user_id              | text FK     | → users; the human, when known                                |
-| source               | text        | `api \| dashboard`                                            |
+| end_user_id          | text FK     | → end_users; null — the customer's customer, when supplied    |
+| source               | text        | `api \| dashboard \| mcp`                                     |
 | media_type           | text        | `image \| video \| audio \| mesh \| splat \| text`            |
 | model                | text        | canonical catalog slug, e.g. `kling_video_v3_pro`             |
 | modality             | text        | e.g. `image_to_video` (resolved, not necessarily requested)   |
@@ -142,7 +168,7 @@ table — nothing reserved now, nothing blocks it.
 | request_params       | jsonb       | canonicalized post-coercion params                            |
 | param_adjustments    | jsonb       | what omni pruned/coerced                                      |
 | status               | text        | `queued \| dispatched \| running \| succeeded \| failed \| canceled \| expired` |
-| failure_code         | text        | null; machine-readable                                        |
+| failure_code         | text        | null; from the failure-code enum (`api.md` §2)                |
 | failure_message      | text        | null; human-readable                                          |
 | provider             | text        | catalog provider slug, e.g. `bytedance`                       |
 | provider_account     | text        | credential pool name from config, e.g. `byteplus_ultra`       |
@@ -161,7 +187,8 @@ table — nothing reserved now, nothing blocks it.
 | expires_at           | timestamptz | give-up deadline                                              |
 
 Indexes: (account_id, created_at desc), (account_id, status), (provider, provider_job_id),
-(status, expires_at) for the reaper.
+(status, expires_at) for the reaper, (account_id, end_user_id, created_at) partial where
+end_user_id is not null.
 
 This table IS the customer spend list: job + status + cost in one row.
 
@@ -175,7 +202,7 @@ This table IS the customer spend list: job + status + cost in one row.
 | data        | jsonb       | small payload                                                       |
 | created_at  | timestamptz |                                                                     |
 
-Append-only state-machine trail; merged into the customer debug timeline.
+Append-only state-machine trail; merged into the customer debug timeline (`logging.md`).
 
 ### job_outputs  (`out_`)
 
@@ -217,12 +244,14 @@ Append-only state-machine trail; merged into the customer debug timeline.
 
 ## 3. Queue
 
+**Sign-off:** _unsigned_
+
 ### queue_tasks  (`task_`)
 
 | column       | type        | notes                                                          |
 | ------------ | ----------- | --------------------------------------------------------------- |
 | id           | text PK     | `task_...`                                                       |
-| task_type    | text        | `dispatch_job \| poll_provider \| ingest_outputs \| deliver_webhook \| settle_refund \| auto_refill \| …` |
+| task_type    | text        | `dispatch_job \| poll_provider \| ingest_outputs \| deliver_webhook \| settle_refund \| auto_refill \| rollup_usage \| …` |
 | payload      | jsonb       | usually `{ "job_id": ... }`                                      |
 | run_after    | timestamptz | scheduling + backoff                                             |
 | priority     | int         | lower = sooner                                                   |
@@ -240,6 +269,8 @@ run_after FOR UPDATE SKIP LOCKED LIMIT n`. Lowered fillfactor + aggressive autov
 ---
 
 ## 4. Billing
+
+**Sign-off:** _unsigned_
 
 Policy (decided): **charge at enqueue, price fixed for the job's lifetime, hard 402, no
 negative balances.** Failure/cancel-before-dispatch → full refund entry.
@@ -341,75 +372,21 @@ Enforced at admission: rolling-window SUM of `job_charge` entries (indexed on
 
 ---
 
-## 5. Logs product
+## 5. Security & bookkeeping
 
-High-volume tables: monthly `PARTITION BY RANGE (created_at)`, minimal indexes
-((account_id, created_at) + (job_id)), secrets redacted at write time. Retention: indefinite,
-with future downsampling (drop bodies, keep skeletons) — partition machinery from day one.
+**Sign-off:** _unsigned_
 
-### request_logs  (`rlog_`)
+The three high-volume log tables (`request_logs`, `provider_calls`, `webhook_deliveries`)
+moved to **`logging.md`** (2026-07-05), which owns the logs product: truncation
+(`is_truncated`), redaction, partitioning, downsampling. What remains here:
 
-| column           | type        | notes                                   |
-| ---------------- | ----------- | ---------------------------------------- |
-| id               | text PK     | `rlog_...`                               |
-| account_id       | text FK     | → accounts                               |
-| api_key_id       | text FK     | null (dashboard = null + source cookie)  |
-| job_id           | text FK     | null for non-job endpoints               |
-| source           | text        | `api \| dashboard`                       |
-| method           | text        |                                          |
-| path             | text        |                                          |
-| api_version      | date        |                                          |
-| ip               | inet        |                                          |
-| user_agent       | text        |                                          |
-| request_headers  | jsonb       | allowlisted only                         |
-| request_body     | jsonb       | redacted                                 |
-| response_status  | int         |                                          |
-| response_body    | jsonb       | redacted; truncated over size cap        |
-| latency_ms       | int         |                                          |
-| created_at       | timestamptz | partition key                            |
-
-### provider_calls  (`pcall_`)
-
-| column           | type        | notes                                                    |
-| ---------------- | ----------- | --------------------------------------------------------- |
-| id               | text PK     | `pcall_...`                                                |
-| job_id           | text FK     | → jobs                                                     |
-| provider         | text        | catalog slug                                               |
-| direction        | text        | `request \| response \| poll_request \| poll_response \| callback_in` |
-| url              | text        |                                                            |
-| request_headers  | jsonb       | our provider keys stripped                                 |
-| request_body     | jsonb       |                                                            |
-| response_status  | int         | null                                                       |
-| response_body    | jsonb       |                                                            |
-| latency_ms       | int         | null                                                       |
-| created_at       | timestamptz | partition key                                              |
-
-### webhook_deliveries  (`whd_`)
-
-| column           | type        | notes                              |
-| ---------------- | ----------- | ----------------------------------- |
-| id               | text PK     | `whd_...`                           |
-| job_id           | text FK     | → jobs                              |
-| account_id       | text FK     | → accounts                          |
-| url              | text        | customer's endpoint                 |
-| event_type       | text        | `job.completed \| job.failed`       |
-| payload          | jsonb       |                                     |
-| attempt          | int         | 1-based                             |
-| response_status  | int         | null                                |
-| response_body    | text        | truncated                           |
-| latency_ms       | int         | null                                |
-| next_retry_at    | timestamptz | null                                |
-| delivered_at     | timestamptz | null                                |
-| gave_up_at       | timestamptz | null                                |
-| created_at       | timestamptz |                                     |
-
-### webhook_secrets  (`whsec_` — the secret itself carries the prefix)
+### webhook_secrets  (`whs_` row id; the secret itself is `foundation_whsec_...`)
 
 | column      | type        | notes                                  |
 | ----------- | ----------- | --------------------------------------- |
-| id          | text PK     | row id `whs_...`                        |
+| id          | text PK     | `whs_...`                               |
 | account_id  | text FK     | → accounts                              |
-| secret      | text        | `whsec_...`, encrypted at rest          |
+| secret      | text        | `foundation_whsec_...`, encrypted at rest |
 | created_at  | timestamptz |                                         |
 | revoked_at  | timestamptz | null; rotation = two active at once     |
 
@@ -442,6 +419,8 @@ with future downsampling (drop bodies, keep skeletons) — partition machinery f
 
 ## 6. The admission transaction (the part to scrutinize)
 
+**Sign-off:** _unsigned_
+
 ```
 BEGIN;
   SELECT balance_micros FROM account_balances WHERE account_id = $1 FOR UPDATE;
@@ -457,3 +436,17 @@ COMMIT;
 Refund path (failure/expiry/cancel-before-dispatch) is the mirror image with
 `entry_type = 'job_refund'` and `jobs.refunded_micros` set. Both paths are idempotent per job
 (ledger idempotency_key = `charge:{job_id}` / `refund:{job_id}`).
+
+---
+
+## 7. Tables owned by sibling design docs
+
+**Sign-off:** _unsigned_
+
+| Table                  | Prefix     | Defined in     |
+| ---------------------- | ---------- | -------------- |
+| request_logs           | `rlog_`    | `logging.md`   |
+| provider_calls         | `pcall_`   | `logging.md`   |
+| webhook_deliveries     | `whd_`     | `logging.md`   |
+| usage_rollups          | `roll_`    | `rankings.md`  |
+| end_user_limits (future) | `eulimit_` | `end-users.md` |

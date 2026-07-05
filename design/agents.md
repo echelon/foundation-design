@@ -1,9 +1,11 @@
 # Agent-Facing Documentation (llms.txt & friends)
 
-**Sign-off:** bt 2026-07-05
-
-<!-- bt: replace "_unsigned_" with initials + date (e.g. "bt 2026-07-05") when approved.
-     Assistants: reset to _unsigned_ on any substantive edit. See ../CLAUDE.md. -->
+**Sign-off:** _unsigned_
+<!-- bt: initials + date when approved (e.g. "bt 2026-07-05"). Per-section sign-offs below;
+     the top one covers the whole document. Assistants: see ../CLAUDE.md. -->
+<!-- Assistant note 2026-07-05: you signed this doc; restructuring to per-section sign-offs
+     preserved your initials on unchanged sections. Only §1 changed (MCP row → mcp.md;
+     removed the retired `Prefer: wait` mention), so §1 and this top line are re-unsigned. -->
 
 **Status:** living document (2026-07-05). Goal: a customer's coding agent (Claude Code,
 Cursor, etc.) should be able to integrate any model or API of ours in one shot, from documents
@@ -14,6 +16,8 @@ they can never drift from reality.
 
 ## 1. The artifacts
 
+**Sign-off:** _unsigned_
+
 All generated from `crates/core/catalog` (the same single source that produces `catalog.json`,
 the OpenAPI spec, and the docs pages). Following the llmstxt.org convention:
 
@@ -21,16 +25,18 @@ the OpenAPI spec, and the docs pages). Following the llmstxt.org convention:
 | ------------------------------------ | -------------------------------------------------------------------- |
 | `/llms.txt`                          | Index: one-paragraph product overview, auth in 3 lines, link list to everything below |
 | `/llms-full.txt`                     | The whole corpus concatenated (for agents that slurp one file)        |
-| `/apis/llms.txt`                     | Platform guide: auth, the three API shapes, cost twins, job lifecycle, polling vs webhooks, `Prefer: wait`, idempotency, errors incl. the 402 body, versioning |
+| `/apis/llms.txt`                     | Platform guide: auth, the three API shapes, cost twins, job lifecycle, polling vs webhooks (no sync mode), idempotency, errors incl. the 402 body, versioning |
 | `/apis/generate/{media}/llms.txt`    | Omni guide per media type: the superset schema, param coercion rules, model comparison table (params × price × speed) |
 | `/models/{model_id}/llms.txt`        | Everything for ONE model: canonical ID + aliases, modalities, per-modality JSON Schema rendered as a param table, pricing, limits, curl + TypeScript + Python examples (submit → poll → download, and webhook variant), model-specific gotchas |
 | `/openapi.json`                      | Already emitted by utoipa; linked from the index                      |
-| (later) MCP server                   | `generate`/`cost`/`get_job`/`list_models` as tools — the catalog gives us the tool schemas for free. Not v1 |
+| MCP server                           | `generate`/`cost`/`get_job`/`list_models` as tools — the catalog gives us the tool schemas for free. Now designed: see `mcp.md` |
 
 Every human docs page also carries a "Copy for LLM" affordance pointing at its llms.txt
 sibling (the thing that makes Fal's pages agent-usable despite the SEO sprawl).
 
 ## 2. Where they live in the source tree
+
+**Sign-off:** bt 2026-07-05
 
 ```
 foundation/
@@ -62,6 +68,8 @@ foundation/
 
 ## 3. How they're served (your Axum vs Netlify question)
 
+**Sign-off:** bt 2026-07-05
+
 Both, cheaply, same files:
 
 1. **Primary: Netlify (docs app).** The Nx docs app's build step copies `generated/llms/` into
@@ -76,6 +84,8 @@ No third deployable. The repo artifact is the single source; Netlify is the deli
 Axum is a signpost.
 
 ## 4. Generation pipeline (concretely)
+
+**Sign-off:** bt 2026-07-05
 
 ```
 catalog registry (Rust)
@@ -97,6 +107,8 @@ correct by construction — never hand-maintained. The docs *website* uses the s
 (via catalog.json) so humans and agents read the same truth.
 
 ## 5. Conventions inside the documents
+
+**Sign-off:** bt 2026-07-05
 
 - Front-load the contract: base URL, auth header, and a complete minimal request in the first
   20 lines (agents often read truncated files).
