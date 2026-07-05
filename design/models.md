@@ -1,5 +1,9 @@
 # Model ID Catalog (hypothetical seed list)
 
+**Sign-off:** _unsigned_
+<!-- bt: replace "_unsigned_" with initials + date (e.g. "bt 2026-07-05") when approved.
+     Assistants: reset to _unsigned_ on any substantive edit. See ../CLAUDE.md. -->
+
 **Status:** living document (2026-07-04). The naming rules are decided; this list is
 illustrative — drawn from Fal, Replicate, and OpenRouter catalogs plus the direct providers —
 and will be pruned to the actual launch set. Reference IDs shown are the competitor/upstream

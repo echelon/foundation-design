@@ -1,5 +1,9 @@
 # Database Schema
 
+**Sign-off:** _unsigned_
+<!-- bt: replace "_unsigned_" with initials + date (e.g. "bt 2026-07-05") when approved.
+     Assistants: reset to _unsigned_ on any substantive edit. See ../CLAUDE.md. -->
+
 **Status:** living document (2026-07-04). Postgres. Siblings: `architecture.md`, `api.md`, `models.md`.
 
 Conventions:

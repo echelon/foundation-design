@@ -1,7 +1,12 @@
 # Architecture
 
+**Sign-off:** _unsigned_
+<!-- bt: replace "_unsigned_" with initials + date (e.g. "bt 2026-07-05") when approved.
+     Assistants: reset to _unsigned_ on any substantive edit. See ../CLAUDE.md. -->
+
 **Status:** living document. Split out of `../2026-07/2026-07-04-initial-build.md` on 2026-07-04.
-Siblings: `api.md` (every endpoint), `schema.md` (every table), `models.md` (model ID catalog).
+Siblings: `api.md` (endpoints), `schema.md` (tables), `models.md` (model IDs), `enums.md`
+(first-class enums), `agents.md` (agent-facing docs pipeline).
 
 ---
 
