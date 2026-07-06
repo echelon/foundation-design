@@ -101,14 +101,14 @@ product copy (ledger entry types like `promo` are internal terms).
 
 | column        | type        | notes                                |
 | ------------- | ----------- | ------------------------------------ |
-| id            | text PK     | `limit_...`                          |
-| account_id    | text FK     | → accounts                           |
-| window        | text        | `weekly \| monthly`                  |
-| limit_micros  | bigint      |                                      |
-| behavior      | text        | `block`                              |
-| created_by    | text FK     | → users                              |
-| created_at    | timestamptz |                                      |
-| updated_at    | timestamptz |                                      |
+| id                  | text PK     | `limit_...`                          |
+| account_id          | text FK     | → accounts                           |
+| window              | text        | `weekly \| monthly`                  |
+| limit_micros        | bigint      |                                      |
+| behavior            | text        | `block`                              |
+| created_by_user_id  | text FK     | → users                              |
+| created_at          | timestamptz |                                      |
+| updated_at          | timestamptz |                                      |
 
 ### stripe_events  (`sevt_`)
 

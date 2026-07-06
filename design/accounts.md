@@ -90,18 +90,18 @@ email scopes), not to act on the user's behalf. Nothing to leak.
 
 | column       | type        | notes                                             |
 | ------------ | ----------- | -------------------------------------------------- |
-| id           | text PK     | `inv_...`                                          |
-| account_id   | text FK     | → accounts                                         |
-| email        | text        | invitee (invite is bound to this email)            |
-| role         | text        | `admin \| member`                                  |
-| code         | text UNIQUE | short human-typeable code (e.g. `7F3K-QT9M`)       |
-| token_hash   | text        | sha256 of the magic-link token (long, unguessable) |
-| invited_by_user_id   | text FK     | → users                                            |
-| expires_at   | timestamptz | default 7 days                                     |
-| accepted_at  | timestamptz | null until accepted                                |
-| accepted_by_user_id  | text FK     | → users, null                                      |
-| revoked_at   | timestamptz | null                                               |
-| created_at   | timestamptz |                                                    |
+| id                  | text PK     | `inv_...`                                          |
+| account_id          | text FK     | → accounts                                         |
+| email               | text        | invitee (invite is bound to this email)            |
+| role                | text        | `admin \| member`                                  |
+| code                | text UNIQUE | short human-typeable code (e.g. `7F3K-QT9M`)       |
+| token_hash          | text        | sha256 of the magic-link token (long, unguessable) |
+| invited_by_user_id  | text FK     | → users                                            |
+| expires_at          | timestamptz | default 7 days                                     |
+| accepted_at         | timestamptz | null until accepted                                |
+| accepted_by_user_id | text FK     | → users, null                                      |
+| revoked_at          | timestamptz | null                                               |
+| created_at          | timestamptz |                                                    |
 
 Code and link are two doors to the same invitation: the email contains the magic link; the
 console shows the code for copy/paste into "join with code."
@@ -121,30 +121,47 @@ console shows the code for copy/paste into "join with code."
 
 ### api_keys  (`key_`; secret `foundation_api_...`, shown once)
 
-| column       | type        | notes                                              |
-| ------------ | ----------- | -------------------------------------------------- |
-| id           | text PK     | `key_...`                                          |
-| account_id   | text FK     | → accounts                                         |
-| created_by   | text FK     | → users                                            |
-| title        | text        | **immutable after creation**                       |
-| description  | text        | null; editable                                     |
-| key_prefix   | text        | `foundation_api_` + first 6 payload chars          |
-| key_hash     | text        | sha256; secret never stored                        |
-| last_used_at | timestamptz | throttled updates                                  |
-| expires_at   | timestamptz | null = no expiry                                   |
-| revoked_at   | timestamptz | null                                               |
-| created_at   | timestamptz |                                                    |
+| column              | type        | notes                                              |
+| ------------------- | ----------- | -------------------------------------------------- |
+| id                  | text PK     | `key_...`                                          |
+| account_id          | text FK     | → accounts                                         |
+| created_by_user_id  | text FK     | → users                                            |
+| title               | text        | **immutable after creation**                       |
+| description         | text        | null; editable                                     |
+| key_prefix          | text        | `foundation_api_` + first 6 payload chars          |
+| key_hash            | text        | sha256; secret never stored                        |
+| last_used_at        | timestamptz | throttled updates                                  |
+| expires_at          | timestamptz | null = no expiry                                   |
+| revoked_at          | timestamptz | null                                               |
+| created_at          | timestamptz |                                                    |
 
-### email_verifications / password_resets  (`everif_` / `pwreset_`)
+### email_verifications  (`everif_`)
 
-| column      | type        | notes                          |
-| ----------- | ----------- | ------------------------------ |
-| id          | text PK     |                                |
-| user_id     | text FK     | → users                        |
-| token_hash  | text        |                                |
-| expires_at  | timestamptz |                                |
-| used_at     | timestamptz | null                           |
-| created_at  | timestamptz |                                |
+| column      | type        | notes                                   |
+| ----------- | ----------- | ---------------------------------------- |
+| id          | text PK     | `everif_...`                             |
+| user_id     | text FK     | → users                                  |
+| token_hash  | text        | sha256 of emailed token                  |
+| expires_at  | timestamptz |                                          |
+| used_at     | timestamptz | null                                     |
+| created_at  | timestamptz |                                          |
+
+Dormant at launch (no verification requirement yet); the table exists so enabling
+verification later is a feature flag, not a migration.
+
+### password_resets  (`pwreset_`)
+
+| column      | type        | notes                                   |
+| ----------- | ----------- | ---------------------------------------- |
+| id          | text PK     | `pwreset_...`                            |
+| user_id     | text FK     | → users                                  |
+| token_hash  | text        | sha256 of emailed token                  |
+| expires_at  | timestamptz | short (~1h)                              |
+| used_at     | timestamptz | null; single-use                         |
+| created_at  | timestamptz |                                          |
+
+Live at launch (password reset works day one). Reset consumption revokes all existing
+sessions for the user.
 
 ## 3. Initial signup flows
 
@@ -193,7 +210,7 @@ invitation (valid, unexpired, unrevoked), then branch on the visitor's state:
      → user created → membership created → invite marked accepted.
    - **Google**: OAuth as flow B; the invite is accepted for the resulting user. If the
      Google email ≠ invite email: allow, but membership binds to the authenticated user and
-     the mismatch is recorded on the invitation (`accepted_by` tells the truth; admins see
+     the mismatch is recorded on the invitation (`accepted_by_user_id` tells the truth; admins see
      "invited x@a, joined as y@b" in the audit log).
    - **GitHub**: same as Google.
 2. **Not signed in, user exists for that email** → login screen (any method they have) →

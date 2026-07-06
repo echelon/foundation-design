@@ -44,6 +44,13 @@ Rules for assistants:
 - All markdown tables: pad cells so the `|` pipes align vertically. Never sparse tables.
 - Keep table columns narrow (terse cells) so padding stays maintainable.
 
+## Schema naming conventions
+
+- **Foreign-key columns include the referenced table's name** (singular): `invited_by_user_id`,
+  `accepted_by_user_id`, `created_by_user_id` — never bare role names like `invited_by` or
+  `created_by`. Columns already of the form `{table}_id` (`account_id`, `user_id`, `job_id`,
+  `payment_method_id`) are already correct. Applies to every design doc that declares tables.
+
 ## Naming
 
 - "Foundation" is a placeholder product name; a real name is pending (see architecture.md open
