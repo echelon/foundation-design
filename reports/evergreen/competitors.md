@@ -5,7 +5,8 @@ Report, 2026-07-05 (deep-dives appended same day). Source-quality tags: **[filin
 decent, GetLatka weak), **[rumor]** unconfirmed.
 
 Relevance markings (bt, 2026-07-05): `TRUE` = direct competitor; `FALSE` = not relevant
-(moved to the bottom, data retained); blank = unmarked pending bt.
+(moved to the bottom, data retained); blank = unmarked pending bt. Featherless, Modal, and
+RunPod moved to TRUE per bt (2026-07-05).
 
 ## 1. Master table
 
@@ -16,6 +17,9 @@ Relevance markings (bt, 2026-07-05): `TRUE` = direct competitor; `FALSE` = not r
 | TRUE | **Fal**        | Media-model aggregator           | 600+ models, LoRA training, hosts Veo       | ~$340M; $140M D @ $4.5B ($8B talks [rumor])  | **~$400M annualized [press]**          | Closed                   |
 | TRUE | **Replicate**  | Serverless open-weights (50k models) | Media catalog, Cog, fine-tunes, Deployments | ~$58M; **acquired by Cloudflare Nov 2025** | not broken out                        | Cog OSS + closed cloud   |
 | TRUE | **OpenRouter** | LLM gateway/router (archetype)   | 400+ models, routing, video API, Agent SDK, server web-search | ~$153M; $113M B @ $1.3B May 2026 | ~$1B GMV; **~$50M take-rate [est]**   | Closed                   |
+| TRUE | **Modal**      | Serverless GPU compute           | Agent sandboxes (~$100M ARR alone)          | ~$465M; $355M C @ $4.65B                     | ~$300M annualized [est]                | Closed + OSS SDK         |
+| TRUE | **RunPod**     | GPU cloud (dev-focused)          | Serverless endpoints, Hub, Public Endpoints (mini-Fal) | ~$120M; $100M A @ $1B Jun 2026    | $240M ARR [co]                         | Closed + OSS workers     |
+| TRUE | **Featherless**| Flat-rate long-tail LLM inference| 30k+ HF models, RWKV research               | ~$25M; $20M A (AMD Ventures)                 | ~$3–6M ARR [press]                     | Closed + OSS research    |
 
 ### Unmarked (funding descending)
 
@@ -26,21 +30,18 @@ Relevance markings (bt, 2026-07-05): `TRUE` = direct competitor; `FALSE` = not r
 |      | SambaNova      | Custom-silicon inference           | SambaCloud, on-prem                          | ~$1.5B; $350M @ $2.2B (57% down round)  | ~$100M [est, weak]                 | Closed                                 |
 |      | Vercel         | Frontend cloud + AI Gateway        | AI SDK (OSS), v0, zero-markup gateway        | ~$860M; $300M F @ $9.3B                 | ~$340M run-rate [est] (parent)     | Gateway closed; SDK OSS                |
 |      | ElevenLabs     | Model lab w/ API (audio)           | TTS/STT/music/agents/dubbing                 | $781M; $500M D @ $11B ($22B tender [rumor]) | ~$500M ARR [co]                | Closed                                 |
-|      | Modal          | Serverless GPU compute             | Agent sandboxes (~$100M ARR alone)           | ~$465M; $355M C @ $4.65B                | ~$300M annualized [est]            | Closed + OSS SDK                       |
 |      | Black Forest Labs | Model lab (FLUX)                | Open weights + partner APIs                  | $450M; $300M B @ $3.25B                 | undisclosed                        | Open weights + closed API              |
 |      | Hugging Face   | Model hub + inference aggregator   | Inference Providers (no markup), Endpoints   | ~$395M; last round 2023 @ $4.5B         | ~$130M 2024 [est]; profitable      | **OSS tooling; Hub platform + infra proprietary** (§Deep-dives) |
 |      | Kong           | API gateway middleware             | AI Gateway plugins (semantic tier enterprise-gated) | ~$345M; $175M E @ $2B            | $100M+ ARR [press]                 | Apache-2.0 core; AI semantics enterprise (§Deep-dives) |
 |      | Fireworks AI   | Serverless open-weights inference  | Fine-tune/RFT, dedicated, media APIs         | ~$327M; $250M C @ $4B ($15B talks [rumor]) | $280M [co] → ~$800M [est]      | Closed                                 |
 |      | SiliconFlow (CN)| Serverless inference / MaaS       | DeepSeek/Qwen APIs                           | ~$294M B Jun 2026                       | undisclosed                        | Closed                                 |
 |      | DeepInfra      | Serverless open-weights (price floor) | GPU instances, media/speech               | $133M; $107M B May 2026                 | undisclosed; "tripled 2026" [co]   | Closed                                 |
-|      | RunPod         | GPU cloud (dev-focused)            | Serverless endpoints, Hub                    | ~$120M; $100M A @ $1B Jun 2026          | $240M ARR [co]                     | Closed + OSS workers                   |
 |      | GMI Cloud      | GPU cloud                          | Inference engine                             | ~$93M (mostly debt)                     | ~$7.4M [est, weak]                 | Closed                                 |
 |      | Poe (Quora)    | Consumer multi-model aggregator    | Bot economy, creator monetization, dev API   | $75M (parent, 2024)                     | ~$65M subs [rumor]                 | Closed                                 |
 |      | Runware        | Serverless media inference         | Custom HW, day-zero onboarding               | $66M; $50M A Dec 2025                   | undisclosed                        | Closed                                 |
 |      | Bria           | Licensed-data visual models        | Attribution/royalty engine                   | ~$65M                                   | undisclosed [co: +400%]            | Weights on HF (licensed)               |
 |      | Recraft        | Model lab (design imagery)         | Brand-controlled gen, API                    | ~$44M; $30M B                           | $5M+ at Series B [press]           | Closed                                 |
 |      | Parasail       | Serverless inference supercloud    | Cross-provider GPU arbitrage                 | $42M; $32M A Apr 2026                   | 500B tokens/day [co]               | Closed                                 |
-|      | Featherless    | Flat-rate long-tail LLM inference  | 30k+ HF models, RWKV research                | ~$25M; $20M A (AMD Ventures)            | ~$3–6M ARR [press]                 | Closed + OSS research                  |
 |      | Hyperbolic     | GPU marketplace + inference        | Verifiable inference, crypto layer           | $20M                                    | undisclosed                        | Closed                                 |
 |      | Portkey        | AI gateway middleware              | OSS gateway, guardrails, governance          | ~$18M; **acquired by Palo Alto May 2026** | ~$5M [est, weak]                 | MIT repo — **silent since deal closed** (§Deep-dives) |
 |      | Martian        | LLM router → interpretability      | Enterprise routing                           | $9M+ seed                               | none public                        | Closed + OSS benchmarks                |

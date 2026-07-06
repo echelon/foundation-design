@@ -5,7 +5,10 @@
      the top one covers the whole document. Assistants: see ../CLAUDE.md. -->
 
 **Status:** living document (2026-07-05). Postgres. Siblings: `architecture.md`, `api.md`,
-`models.md`, `enums.md`, `logging.md`, `end-users.md`, `rankings.md`.
+`models.md`, `enums.md`, `jobs.md`, `logging.md`, `end-users.md`, `rankings.md`.
+
+This doc owns only the tables no sibling claims. Every table defined in a sibling doc appears
+here **only** as a pointer (§7) — never duplicated.
 
 Conventions:
 
@@ -55,80 +58,10 @@ customers send their own stable IDs or hashes.
 
 **Sign-off:** _unsigned_
 
-### jobs  (`job_`)
-
-| column               | type        | notes                                                        |
-| -------------------- | ----------- | ------------------------------------------------------------ |
-| id                   | text PK     | `job_...`                                                     |
-| account_id           | text FK     | → accounts                                                    |
-| api_key_id           | text FK     | → api_keys; **null = dashboard session**                      |
-| user_id              | text FK     | → users; the human, when known                                |
-| end_user_id          | text FK     | → end_users; null — the customer's customer, when supplied    |
-| source               | text        | `api \| dashboard \| mcp`                                     |
-| media_type           | text        | `image \| video \| audio \| mesh \| splat \| text`            |
-| model                | text        | canonical catalog slug, e.g. `kling_video_v3_pro`             |
-| modality             | text        | e.g. `image_to_video` (resolved, not necessarily requested)   |
-| api_shape            | text        | `granular \| unified \| any \| chat`                          |
-| api_version          | date        | version the request came in on                                |
-| idempotency_key      | text        | null; UNIQUE (account_id, idempotency_key)                    |
-| request_params       | jsonb       | canonicalized post-coercion params                            |
-| param_adjustments    | jsonb       | what the Any layer pruned/coerced                             |
-| status               | text        | `queued \| dispatched \| running \| succeeded \| failed \| canceled \| expired` |
-| failure_code         | text        | null; from the failure-code enum (`api.md` §2)                |
-| failure_message      | text        | null; human-readable                                          |
-| provider             | text        | catalog provider slug, e.g. `bytedance`                       |
-| provider_account     | text        | credential pool name from config, e.g. `byteplus_ultra`       |
-| provider_job_id      | text        | upstream's task/request id; indexed                           |
-| price_unit           | text        | snapshot: `per_video_second`, `per_image`, …                  |
-| unit_amount_nanos    | bigint      | snapshot: nano-USD rate charged                               |
-| quantity             | numeric     | snapshot: units billed (e.g. seconds)                         |
-| charged_micros       | bigint      | fixed at enqueue; **never changes** (LLM jobs: set at completion) |
-| refunded_micros      | bigint      | 0 unless failed/canceled → refunded                           |
-| webhook_url          | text        | null                                                          |
-| webhook_events       | text[]      |                                                               |
-| created_at           | timestamptz | = enqueue + charge moment                                     |
-| dispatched_at        | timestamptz | null                                                          |
-| started_at           | timestamptz | null                                                          |
-| completed_at         | timestamptz | null                                                          |
-| expires_at           | timestamptz | give-up deadline                                              |
-
-Indexes: (account_id, created_at desc), (account_id, status), (provider, provider_job_id),
-(status, expires_at) for the reaper, (account_id, end_user_id, created_at) partial where
-end_user_id is not null.
-
-This table IS the customer spend list: job + status + cost in one row.
-
-### job_events  (`jevt_`)
-
-| column      | type        | notes                                                              |
-| ----------- | ----------- | ------------------------------------------------------------------ |
-| id          | text PK     | `jevt_...`                                                          |
-| job_id      | text FK     | → jobs                                                              |
-| event_type  | text        | `created \| charged \| dispatched \| provider_accepted \| poll_tick \| provider_completed \| output_ingested \| webhook_sent \| refunded \| failed \| …` |
-| data        | jsonb       | small payload                                                       |
-| created_at  | timestamptz |                                                                     |
-
-Append-only state-machine trail; merged into the customer debug timeline (`logging.md`).
-
-### job_outputs  (`out_`)
-
-| column           | type        | notes                                        |
-| ---------------- | ----------- | -------------------------------------------- |
-| id               | text PK     | `out_...`                                     |
-| job_id           | text FK     | → jobs                                        |
-| output_index     | int         | 0-based within the job                        |
-| kind             | text        | `image \| video \| audio \| mesh \| splat \| thumbnail \| text` |
-| storage_key      | text        | R2 object key                                 |
-| cdn_url          | text        | durable, ours                                 |
-| mime             | text        |                                               |
-| bytes            | bigint      |                                               |
-| width            | int         | null                                          |
-| height           | int         | null                                          |
-| duration_ms      | int         | null                                          |
-| checksum_sha256  | text        |                                               |
-| provider_url     | text        | original (expiring) upstream URL, for debugging |
-| storage_class    | text        | `hot \| cold` — forever-retention with cold migration |
-| created_at       | timestamptz |                                               |
+**Moved to `jobs.md` (2026-07-05):** jobs, job_events, job_outputs — plus the status machine
+(internal + external state tables), the jobs API endpoints, and the retry/cancel policy. Jobs
+are the universal primitive (every generation — API, dashboard, MCP, LLM — is a job row);
+the full design lives there. What remains in this section:
 
 ### files  (`file_`) — customer inputs
 
@@ -245,6 +178,9 @@ Moved to `payments.md` §6 (with the refund mirror and LLM exception).
 
 | Table                    | Prefix      | Defined in      |
 | ------------------------ | ----------- | --------------- |
+| jobs                     | `job_`      | `jobs.md`       |
+| job_events               | `jevt_`     | `jobs.md`       |
+| job_outputs              | `out_`      | `jobs.md`       |
 | accounts                 | `acct_`     | `accounts.md`   |
 | users                    | `user_`     | `accounts.md`   |
 | user_identities          | `ident_`    | `accounts.md`   |
@@ -252,7 +188,7 @@ Moved to `payments.md` §6 (with the refund mirror and LLM exception).
 | invitations              | `inv_`      | `accounts.md`   |
 | sessions                 | `sess_`     | `accounts.md`   |
 | api_keys                 | `key_`      | `accounts.md`   |
-| email_verifications      | `everif_`   | `accounts.md`   |
+| email_verifications      | `emailver_` | `accounts.md`   |
 | password_resets          | `pwreset_`  | `accounts.md`   |
 | stripe_customers         | `cust_`     | `payments.md`   |
 | payment_methods          | `pm_`       | `payments.md`   |

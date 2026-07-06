@@ -7,7 +7,10 @@ This directory is the human/assistant pairing workspace for the Foundation desig
 | Path        | Purpose                                                                    |
 | ----------- | -------------------------------------------------------------------------- |
 | `design/`   | The living design decisions. These are the documents we execute against    |
-| `reports/`  | One-off research answers and explainers. Immutable once delivered; superseded by new reports, not edited |
+| `reports/`  | One-off research answers and explainers. Immutable once delivered; superseded by new reports, not edited. **New reports land in `reports/` root**; bt files them into subfolders |
+| `reports/read/` | Reports bt has processed. Immutable                                     |
+| `reports/evergreen/` | Living reference reports (e.g. competitors) — the exception: these ARE updated in place on request |
+| `reports/later/before-v1/`, `.../after-v1/` | Parked for revisit at that horizon             |
 | `2026-07/`  | Dated historical drafts. Do not edit                                        |
 
 ## Sign-off protocol (design/ documents only)

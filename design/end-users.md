@@ -1,6 +1,7 @@
 # End Users (our customers' customers)
 
-**Sign-off:** _unsigned_
+**Sign-off:** bt 2026-07-06
+
 <!-- bt: initials + date when approved (e.g. "bt 2026-07-05"). Per-section sign-offs below;
      the top one covers the whole document. Assistants: see ../CLAUDE.md. -->
 
@@ -12,7 +13,7 @@ auto-upsert, customer-supplied `external_id` ≤256 chars, our internal `enduser
 
 ## 1. The contract
 
-**Sign-off:** _unsigned_
+**Sign-off:** bt 2026-07-06
 
 - Any generate/cost/chat request MAY include `"end_user": "<their opaque id, ≤256 chars>"`.
   **Never required.** Absent = null everywhere downstream; no behavior changes.
@@ -23,7 +24,7 @@ auto-upsert, customer-supplied `external_id` ≤256 chars, our internal `enduser
 
 ## 2. Schema
 
-**Sign-off:** _unsigned_
+**Sign-off:** bt 2026-07-06
 
 `end_users` table and `jobs.end_user_id` are canonical in `schema.md` (§1, §2). Recap:
 
@@ -39,7 +40,7 @@ auto-upsert, customer-supplied `external_id` ≤256 chars, our internal `enduser
 
 ## 3. The superpowers (all approved 2026-07-05)
 
-**Sign-off:** _unsigned_
+**Sign-off:** bt 2026-07-06
 
 ### Abuse attribution
 
@@ -55,6 +56,8 @@ and bill their own users from our data. Served from the jobs table at first (ind
 `(account_id, end_user_id, created_at)`), rollup table if it gets hot.
 
 ### Per-end-user spend / rate limits (optional, account-configured)
+
+We won't be building this in v1, but could in the future.
 
 Future table (not in v1 schema; listed in `schema.md` §7):
 
@@ -79,7 +82,7 @@ the field mandatory *in their own client code*).
 
 ## 4. Boundaries
 
-**Sign-off:** _unsigned_
+**Sign-off:** bt 2026-07-06
 
 - End users are **not** identities: no auth, no logins, no cross-account linkage, no global
   identity graph. Strictly per-account labels.

@@ -19,8 +19,13 @@ provider-agnostic).
   linked SSO identities (Google, GitHub). Password is optional (SSO-only users exist).
 - An **account** is the billing/team entity. Sign-up creates user + account with that user as
   admin. All resources hang off `account_id`.
-- Email is the join key across identities: one user row per human, however many ways they
-  log in.
+- **`user_id` is the join key across identities** — `user_identities`, `account_members`,
+  `sessions`, etc. all FK to `users.id`. One user row per human, however many ways they log
+  in. Email is **never** a join key or FK: SSO identities resolve on the stable
+  `(provider, provider_user_id)` pair, passwords resolve on the `users` row itself. Email's
+  only structural role is the signup-time collision check (§3B: "an account with this email
+  exists — log in to link") — a routing hint, deliberately frail-proof because matching email
+  alone never logs you in or merges anything.
 - No email verification at launch for email/password signup (decided) — but the column and
   token table exist so enabling it later is a flag, not a migration.
 
@@ -135,11 +140,11 @@ console shows the code for copy/paste into "join with code."
 | revoked_at          | timestamptz | null                                               |
 | created_at          | timestamptz |                                                    |
 
-### email_verifications  (`everif_`)
+### email_verifications  (`emailver_`)
 
 | column      | type        | notes                                   |
 | ----------- | ----------- | ---------------------------------------- |
-| id          | text PK     | `everif_...`                             |
+| id          | text PK     | `emailver_...`                           |
 | user_id     | text FK     | → users                                  |
 | token_hash  | text        | sha256 of emailed token                  |
 | expires_at  | timestamptz |                                          |
@@ -169,6 +174,10 @@ sessions for the user.
 
 All three converge on the same final step: create `users` row → create `accounts` row →
 create `account_members(admin)` → create session → land in console onboarding.
+
+**That final step is one database transaction.** User, account, membership, and session rows
+(plus the `user_identities` row for SSO signups) commit atomically; any failure rolls back
+everything. No orphan users, no memberless accounts, no half-signups to reap.
 
 **A. Email + password**
 

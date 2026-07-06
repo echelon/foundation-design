@@ -161,16 +161,9 @@ Shape 3 (model-as-parameter, superset schema) is branded the **Any API** — DEC
 
 **Sign-off:** _unsigned_
 
-| Endpoint                       | Method | Purpose                                              |
-| ------------------------------ | ------ | ---------------------------------------------------- |
-| `/v1/jobs/{job_id}`            | GET    | Full job: status, params echo, outputs, cost         |
-| `/v1/jobs/{job_id}/status`     | GET    | Lightweight status-only (cheap poll)                 |
-| `/v1/jobs`                     | GET    | List; filters: status, model, media_type, source, api_key, end_user, time range |
-| `/v1/jobs/{job_id}/cancel`     | POST   | Cancel if not terminal (refund if never dispatched)  |
-| `/v1/jobs/{job_id}/logs`       | GET    | Merged debug timeline — the logs product (`logging.md`) |
-
-Statuses: `queued → dispatched → running → succeeded | failed | canceled | expired`.
-Failed and expired jobs are auto-refunded (ledger `job_refund`).
+**Moved to `jobs.md` (2026-07-05)** — endpoints, the status machine (internal + external),
+cancel/refund semantics, and the retry policy all live there. Jobs are the universal
+primitive; every generate call in §3 (and every LLM call in §5) produces one.
 
 ## 5. LLM
 

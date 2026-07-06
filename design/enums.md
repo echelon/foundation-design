@@ -111,8 +111,10 @@ compile-time test).
 | ----------------- | ---------------------------------------------------------------------------------------------- |
 | `MediaType`       | `image  video  audio  mesh  splat  text`                                                        |
 | `Modality`        | `text_to_image  image_to_image  text_to_video  image_to_video  reference_to_video  video_to_video  keyframe_to_video  text_to_audio  audio_to_audio  speech_to_text  text_to_mesh  image_to_mesh  text_to_splat  image_to_splat  chat` |
-| `JobStatus`       | `queued  dispatched  running  succeeded  failed  canceled  expired`                             |
-| `JobEventType`    | `created  charged  dispatched  provider_accepted  poll_tick  provider_completed  output_ingested  webhook_sent  refunded  failed  canceled` |
+| `JobStatus`       | `queued  running  succeeded  failed  canceled  expired` — authoritative in `jobs.md` §2 (internal = external, decided) |
+| `QueueStage`      | `gateway  provider` — naming OPEN (`jobs.md` §2)                                                |
+| `CanceledBy`      | `user  system  provider` (`jobs.md` §4)                                                         |
+| `JobEventType`    | `created  charged  dispatch_attempted  provider_accepted  poll_tick  provider_completed  output_ingested  webhook_sent  refunded  failed  canceled  expired` — authoritative in `jobs.md` §4 |
 | `ApiShape`        | `granular  unified  any  chat`                                                                  |
 | `RequestSource`   | `api  dashboard  mcp`                                                                           |
 | `LedgerEntryType` | `topup  job_charge  job_refund  adjustment  promo  auto_refill`                                 |

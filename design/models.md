@@ -237,6 +237,21 @@ No-API callouts: **Suno** (v5.5 — no public API; "exploring" one as of 2026-07
 (UMG walled garden, no API), **PlayAI/PlayHT** (defunct — Meta acquired, API sunset
 2025-12-31). Everything below has a real API path.
 
+**Taxonomy (DECIDED 2026-07-05, from `../reports/read/audio-taxonomy.md`):** audio stays ONE
+media type, split by task modalities (§11) plus a **lifecycle** axis:
+
+- Catalog entries carry `lifecycle: sync | async_job | session`. `session` models (realtime
+  TTS/STT, S2S dialogue, Lyria RealTime — websocket-native) are **listed in the catalog but
+  not invocable via `/v1/generate`**; docs point to the future realtime plane
+  (`future-roadmap.md` §2). In the table below: `elevenlabs_scribe_v2_realtime` and
+  `deepgram_flux` are `session`.
+- **VOICE is a future platform resource** (`voice_` prefix; designed / instant clone /
+  professional clone / licensed library), not a task — v1 ships provider-preset voices only;
+  the resource lands with cloning (`future-roadmap.md` §3).
+- Rankings/jobs need no changes — batch audio flows through the existing pipeline untouched.
+- Rebrand note: Sonauto → **Treblo** (2026-06, `api.treblo.com`); slug stays `sonauto_v2`
+  until they rename the model line itself.
+
 | Our ID                            | Display name              | Reference (theirs)                              |
 | --------------------------------- | ------------------------- | ------------------------------------------------ |
 | `elevenlabs_v3`                   | Eleven v3                 | `eleven_v3`                                      |
@@ -562,19 +577,19 @@ Definitions in §11.
 
 | Model                             | Modalities                                                    |
 | --------------------------------- | -------------------------------------------------------------- |
-| `elevenlabs_v3`                   | text_to_speech                                                  |
+| `elevenlabs_v3`                   | text_to_speech, dialogue_to_speech                              |
 | `elevenlabs_multilingual_v2`      | text_to_speech                                                  |
 | `elevenlabs_flash_v2_5`           | text_to_speech                                                  |
 | `elevenlabs_scribe_v2`            | speech_to_text                                                  |
-| `elevenlabs_scribe_v2_realtime`   | speech_to_text                                                  |
-| `elevenlabs_music_v2`             | text_to_music                                                   |
+| `elevenlabs_scribe_v2_realtime`   | speech_to_text (lifecycle: session)                             |
+| `elevenlabs_music_v2`             | text_to_music, inpaint_music                                    |
 | `elevenlabs_sfx_v2`               | text_to_sfx                                                     |
 | `cartesia_sonic_v3_5`             | text_to_speech                                                  |
 | `cartesia_ink_v2`                 | speech_to_text                                                  |
 | `minimax_speech_v2_8_hd`          | text_to_speech                                                  |
 | `minimax_speech_v2_8_turbo`       | text_to_speech                                                  |
 | `minimax_voice_clone`             | voice_clone                                                     |
-| `minimax_music_v2_6`              | text_to_music                                                   |
+| `minimax_music_v2_6`              | text_to_music, cover_music                                      |
 | `openai_gpt_4o_mini_tts`          | text_to_speech                                                  |
 | `openai_gpt_4o_transcribe`        | speech_to_text                                                  |
 | `openai_whisper_large_v3`         | speech_to_text                                                  |
@@ -583,25 +598,25 @@ Definitions in §11.
 | `google_lyria_v3`                 | text_to_music                                                   |
 | `google_lyria_v3_pro`             | text_to_music                                                   |
 | `deepgram_nova_v3`                | speech_to_text                                                  |
-| `deepgram_flux`                   | speech_to_text                                                  |
+| `deepgram_flux`                   | speech_to_text (lifecycle: session)                             |
 | `deepgram_aura_v2`                | text_to_speech                                                  |
 | `assemblyai_universal_v3_5_pro`   | speech_to_text                                                  |
-| `stability_stable_audio_v3`       | text_to_music, text_to_sfx                                      |
-| `stability_stable_audio_v2_5`     | text_to_music, text_to_sfx                                      |
+| `stability_stable_audio_v3`       | text_to_music, text_to_sfx, inpaint_music, cover_music          |
+| `stability_stable_audio_v2_5`     | text_to_music, text_to_sfx, inpaint_music, cover_music          |
 | `xai_grok_voice_tts_v1`           | text_to_speech                                                  |
 | `mistral_voxtral_mini_tts`        | text_to_speech                                                  |
 | `mistral_voxtral_mini_transcribe` | speech_to_text                                                  |
 | `kokoro`                          | text_to_speech                                                  |
-| `narilabs_dia`                    | text_to_speech, voice_clone                                     |
+| `narilabs_dia`                    | text_to_speech, dialogue_to_speech, voice_clone                 |
 | `f5_tts`                          | text_to_speech, voice_clone                                     |
 | `canopy_orpheus`                  | text_to_speech                                                  |
 | `resemble_chatterbox`             | text_to_speech, voice_clone                                     |
 | `sesame_csm_1b`                   | text_to_speech                                                  |
-| `microsoft_vibevoice`             | text_to_speech                                                  |
+| `microsoft_vibevoice`             | text_to_speech, dialogue_to_speech                              |
 | `alibaba_qwen3_tts`               | text_to_speech, voice_clone                                     |
 | `mmaudio_v2`                      | video_to_audio, text_to_sfx                                     |
 | `ace_step`                        | text_to_music                                                   |
-| `sonauto_v2`                      | text_to_music                                                   |
+| `sonauto_v2`                      | text_to_music, extend_music, inpaint_music                      |
 
 ### Mesh models
 
@@ -687,9 +702,18 @@ modalities).
 | `audio_to_video`       | Audio input drives video generation                                    |
 | `video_to_audio`       | Generate soundtrack/foley from video                                   |
 | `text_to_speech`       | Text → voice audio                                                     |
+| `dialogue_to_speech`   | Multi-speaker script → conversation audio                              |
 | `speech_to_text`       | Audio → transcript                                                     |
 | `voice_clone`          | Reference voice sample → reusable voice                                |
+| `voice_conversion`     | Audio in one voice → same performance in another voice                 |
 | `text_to_music`        | Prompt → music                                                         |
+| `extend_music`         | Continue a music clip in time (either end)                             |
+| `inpaint_music`        | Regenerate/replace a section inside a music clip                       |
+| `cover_music`          | Style-transfer an existing song (reference-audio cover)                |
+| `remaster`             | Quality-uplift an existing audio recording                             |
+| `stem_split`           | Song → separated instrument/vocal stems                                |
+| `audio_isolation`      | Extract speech/vocals from noisy audio                                 |
+| `forced_alignment`     | Audio + transcript → word/phoneme timestamps                           |
 | `text_to_sfx`          | Prompt → sound effect                                                  |
 | `text_to_mesh`         | Prompt → 3D asset                                                      |
 | `image_to_mesh`        | Image(s) → 3D asset                                                    |
@@ -731,7 +755,8 @@ its agent docs.
 **Sign-off:** _unsigned_
 
 Decision: **`_snap_{version}`** marks a pinned snapshot; **`_latest`** is also supported as an
-explicit rolling alias. (Analysis retained in `../reports/model-versioning.md`.)
+explicit rolling alias. (Analysis retained in `../reports/read/model-versioning.md`; enum
+representation of snapshots: `../reports/model-enums-expanded-considerations.md`.)
 
 | Form                                       | Meaning                                            |
 | ------------------------------------------ | --------------------------------------------------- |
