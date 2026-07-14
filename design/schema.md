@@ -42,6 +42,8 @@ What remains in this section:
 
 ### end_users  (`enduser_`) — our customers' customers (DECIDED 2026-07-05; see `end-users.md`)
 
+**Sign-off:** _unsigned_
+
 | column        | type        | notes                                           |
 | ------------- | ----------- | ----------------------------------------------- |
 | sid           | bigint      | identity; never exposed (ids.md §4)             |
@@ -79,21 +81,23 @@ section.
 
 ### queue_tasks  (`task_`)
 
-| column       | type        | notes                                                                                                       |
-| ------------ | ----------- | ----------------------------------------------------------------------------------------------------------- |
-| sid          | bigint      | identity; never exposed (ids.md §4)                                                                         |
-| id           | text PK     | `task_...`                                                                                                  |
+**Sign-off:** _unsigned_
+
+| column       | type        | notes                                                                                                                             |
+| ------------ | ----------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| sid          | bigint      | identity; never exposed (ids.md §4)                                                                                               |
+| id           | text PK     | `task_...`                                                                                                                        |
 | task_type    | text        | `dispatch_job, poll_provider, ingest_outputs, deliver_webhook, settle_refund, auto_refill, rollup_usage, process_stripe_event, …` |
-| payload      | jsonb       | usually `{ "job_id": ... }`                                                                                 |
-| created_at   | timestamptz |                                                                                                             |
-| run_after    | timestamptz | scheduling + backoff                                                                                        |
-| priority     | int         | lower = sooner                                                                                              |
-| attempts     | int         |                                                                                                             |
-| max_attempts | int         |                                                                                                             |
-| locked_by    | text        | worker identity; null                                                                                       |
-| locked_at    | timestamptz | visibility timeout base; null                                                                               |
-| status       | text        | `pending, running, done, dead`                                                                              |
-| last_error   | text        | null                                                                                                        |
+| payload      | jsonb       | usually `{ "job_id": ... }`                                                                                                       |
+| created_at   | timestamptz |                                                                                                                                   |
+| run_after    | timestamptz | scheduling + backoff                                                                                                              |
+| priority     | int         | lower = sooner                                                                                                                    |
+| attempts     | int         |                                                                                                                                   |
+| max_attempts | int         |                                                                                                                                   |
+| locked_by    | text        | worker identity; null                                                                                                             |
+| locked_at    | timestamptz | visibility timeout base; null                                                                                                     |
+| status       | text        | `pending, running, done, dead`                                                                                                    |
+| last_error   | text        | null                                                                                                                              |
 
 Worker loop: `SELECT ... WHERE status='pending' AND run_after <= now() ORDER BY priority,
 run_after FOR UPDATE SKIP LOCKED LIMIT n`. Lowered fillfactor + aggressive autovacuum.
@@ -123,6 +127,8 @@ moved to **`logging.md`** (2026-07-05), which owns the logs product: truncation
 
 ### webhook_secrets  (`whs_` row id; the secret itself is `foundation_whsec_...`)
 
+**Sign-off:** _unsigned_
+
 | column     | type        | notes                                     |
 | ---------- | ----------- | ----------------------------------------- |
 | sid        | bigint      | identity; never exposed (ids.md §4)       |
@@ -134,19 +140,24 @@ moved to **`logging.md`** (2026-07-05), which owns the logs product: truncation
 
 ### audit_logs  (`audit_`)
 
-| column        | type        | notes                                                        |
-| ------------- | ----------- | ------------------------------------------------------------ |
-| sid           | bigint      | identity; never exposed (ids.md §4)                          |
-| id            | text PK     | `audit_...`                                                  |
-| account_id    | text FK     | → accounts                                                   |
-| actor_user_id | text FK     | → users                                                      |
-| action        | text        | `key.created, key.revoked, member.invited, limit.changed, …` |
-| target_id     | text        | the affected row's id (self-describing prefix!)              |
-| data          | jsonb       |                                                              |
-| ip            | inet        |                                                              |
-| created_at    | timestamptz |                                                              |
+**Sign-off:** _unsigned_
+
+| column        | type        | notes                                                                                                                                                      |
+| ------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| sid           | bigint      | identity; never exposed (ids.md §4)                                                                                                                        |
+| id            | text PK     | `audit_...`                                                                                                                                                |
+| account_id    | text FK     | → accounts                                                                                                                                                 |
+| actor_user_id | text FK     | → users                                                                                                                                                    |
+| action        | text        | `key.created, key.revoked, member.invited, limit.changed, …`                                                                                               |
+| target_type   | text        | enum `AuditTargetType`: singular entity slug (`api_key, member, invitation, spend_limit, …`) — one value per §7 entity, generated from the prefix registry |
+| target_id     | text        | the affected row's id (self-describing prefix!)                                                                                                            |
+| data          | jsonb       |                                                                                                                                                            |
+| ip            | inet        |                                                                                                                                                            |
+| created_at    | timestamptz |                                                                                                                                                            |
 
 ### idempotency_keys  (`idem_`)
+
+**Sign-off:** _unsigned_
 
 | column            | type        | notes                               |
 | ----------------- | ----------- | ----------------------------------- |

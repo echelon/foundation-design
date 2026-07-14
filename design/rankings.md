@@ -42,6 +42,8 @@ One rollup table, hourly grain; coarser grains are derived, not stored separatel
 
 ### usage_rollups  (`roll_`)
 
+**Sign-off:** _unsigned_
+
 | column            | type        | notes                                                                       |
 | ----------------- | ----------- | --------------------------------------------------------------------------- |
 | sid               | bigint      | identity; never exposed (ids.md §4)                                         |

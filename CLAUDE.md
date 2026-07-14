@@ -30,12 +30,19 @@ Each `##` section then has a bare one-liner directly under its heading (no instr
 **Sign-off:** _unsigned_
 ```
 
+**Per-table sign-offs (added 2026-07-14):** every schema table (`###` header in a
+schema-bearing doc) ALSO carries its own bare sign-off line under the table heading, so bt
+can review tables independently.
+
 Rules for assistants:
 
 1. **Never** write bt's initials. Only bt signs.
 2. On a **substantive** edit (changed decision, added/removed content, altered table), reset
    the sign-off of every touched section AND the top-of-doc sign-off to `_unsigned_`.
    Untouched sections keep their sign-offs — that's the point: bt re-reads only what changed.
+   Table edits are scoped tighter: altering a table resets THAT table's sign-off and the
+   top-of-doc sign-off; the enclosing `##` section's sign-off resets only if its prose
+   changed too.
 3. Pure mechanical fixes (typos, whitespace, link repair, re-padding) reset nothing. When in
    doubt, reset.
 4. When resetting, say so in the reply and name the un-signed sections.

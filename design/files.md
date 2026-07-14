@@ -38,6 +38,8 @@ Yes — two tables. The design splits **storage** from **provenance**
 
 ### files  (`file_`) — the storage primitive
 
+**Sign-off:** _unsigned_
+
 | column          | type        | null? | notes                                                                            |
 | --------------- | ----------- | ----- | -------------------------------------------------------------------------------- |
 | sid             | bigint      | no    | identity; never exposed (ids.md §4)                                              |
@@ -59,6 +61,8 @@ we ingested from. The long-term hosting product is ACLs + serving tiers **on fil
 primitive needed.
 
 ### outputs  (`out_`) — job products, pure provenance
+
+**Sign-off:** _unsigned_
 
 | column       | type        | null? | notes                                                            |
 | ------------ | ----------- | ----- | ---------------------------------------------------------------- |

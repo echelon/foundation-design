@@ -96,7 +96,7 @@ Format spec, entropy math, the keep-the-millisecond-clock decision, and the pref
   `crates/core/money`.
 - Dashboard sandbox runs bill **identically** to API runs: same ledger, same logs, same jobs
   table, same 402. The only difference is auth (cookie vs API key), recorded on the job as
-  `source = dashboard | api | mcp`.
+  `source = api_key, dashboard, mcp`.
 - Spend visibility is a first-class product surface: every job row carries its cost + status;
   `GET /v1/jobs` and the ledger endpoints power the console's spend views (see `api.md`).
 

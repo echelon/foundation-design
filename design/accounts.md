@@ -35,6 +35,8 @@ table is provider-agnostic).
 
 ### accounts  (`acct_`)
 
+**Sign-off:** bt 2026-10-14
+
 | column                 | type        | null? | notes                                  |
 | ---------------------- | ----------- | ----- | -------------------------------------- |
 | sid                    | bigint      | no    | identity; never exposed (ids.md §4)    |
@@ -62,10 +64,12 @@ table is provider-agnostic).
   (self-closure or ban) — not activity level. Dormancy is derivable from usage; an
   `inactive` value would add transitions with no policy meaning.
 - Billing address fields are deliberately loose free-text (international formats vary too
-  much for strict per-field validation); `billing_country` is the only coded field. Stripe
+  much for strict per-field validation); `billing_country_code` is the only coded field. Stripe
   stays the validator of record where tax/receipts care.
 
 ### users  (`user_`)
+
+**Sign-off:** _unsigned_
 
 | column            | type        | null? | notes                                                                                                   |
 | ----------------- | ----------- | ----- | ------------------------------------------------------------------------------------------------------- |
@@ -88,6 +92,8 @@ must not guess at. All lookups and uniqueness run against `email`; `email_origin
 we show back and what support sees.
 
 ### user_sso_connections  (`sso_`) — SSO links (renamed from `user_identities`, 2026-07-14)
+
+**Sign-off:** _unsigned_
 
 | column           | type        | null? | notes                                                               |
 | ---------------- | ----------- | ----- | ------------------------------------------------------------------- |
@@ -113,6 +119,8 @@ email scopes), not to act on the user's behalf. Nothing to leak.
 
 ### account_members  (`mem_`)
 
+**Sign-off:** _unsigned_
+
 | column     | type        | null? | notes                               |
 | ---------- | ----------- | ----- | ----------------------------------- |
 | sid        | bigint      | no    | identity; never exposed (ids.md §4) |
@@ -124,6 +132,8 @@ email scopes), not to act on the user's behalf. Nothing to leak.
 |            |             |       | UNIQUE (account_id, user_id)        |
 
 ### invitations  (`inv_`) — now supports code AND magic link
+
+**Sign-off:** _unsigned_
 
 | column              | type        | null? | notes                                              |
 | ------------------- | ----------- | ----- | -------------------------------------------------- |
@@ -146,6 +156,8 @@ console shows the code for copy/paste into "join with code."
 
 ### sessions  (`sess_`)
 
+**Sign-off:** _unsigned_
+
 | column     | type        | null? | notes                               |
 | ---------- | ----------- | ----- | ----------------------------------- |
 | sid        | bigint      | no    | identity; never exposed (ids.md §4) |
@@ -163,24 +175,37 @@ session-cache slot already reserved in `architecture.md` §1): keyed by token ha
 `expires_at`, entry deleted on revoke/logout. Postgres stays the source of truth; the cache
 is a read-through.
 
-### api_keys  (`key_`; secret `foundation_api_...`, shown once)
+### api_keys  (`key_`; secret currently `foundation_api_...`, shown once)
 
-| column             | type        | null? | notes                                     |
-| ------------------ | ----------- | ----- | ----------------------------------------- |
-| sid                | bigint      | no    | identity; never exposed (ids.md §4)       |
-| id                 | text PK     | no    | `key_...`                                 |
-| account_id         | text FK     | no    | → accounts                                |
-| created_by_user_id | text FK     | no    | → users                                   |
-| title              | text        | no    | **immutable after creation**              |
-| description        | text        | yes   | editable                                  |
-| key_prefix         | text        | no    | `foundation_api_` + first 6 payload chars |
-| key_hash           | text        | no    | sha256; secret never stored               |
-| created_at         | timestamptz | no    |                                           |
-| last_used_at       | timestamptz | yes   | throttled updates                         |
-| expires_at         | timestamptz | yes   | null = no expiry                          |
-| revoked_at         | timestamptz | yes   |                                           |
+**Sign-off:** _unsigned_
+
+| column             | type        | null? | notes                                                           |
+| ------------------ | ----------- | ----- | --------------------------------------------------------------- |
+| sid                | bigint      | no    | identity; never exposed (ids.md §4)                             |
+| id                 | text PK     | no    | `key_...`                                                       |
+| account_id         | text FK     | no    | → accounts                                                      |
+| created_by_user_id | text FK     | no    | → users                                                         |
+| title              | text        | no    | **immutable after creation**                                    |
+| description        | text        | yes   | editable                                                        |
+| key_prefix         | text        | no    | the key's OWN minted prefix + first 6 payload chars (see below) |
+| key_hash           | text        | no    | sha256; secret never stored                                     |
+| created_at         | timestamptz | no    |                                                                 |
+| last_used_at       | timestamptz | yes   | throttled updates                                               |
+| expires_at         | timestamptz | yes   | null = no expiry                                                |
+| revoked_at         | timestamptz | yes   |                                                                 |
+
+**The secret prefix is config, not schema (2026-07-14).** Nothing in this table hardcodes
+`foundation_api_`: keys are looked up by `key_hash`, and the auth layer accepts a
+**configured set** of secret prefixes — one *canonical* prefix used for minting new keys,
+plus any number of *legacy* prefixes still accepted for verification. A service rename is
+therefore: add the new canonical prefix, demote the old one to legacy — every existing key
+keeps working, forever. `key_prefix` stores what each key was actually minted with, so the
+console displays old keys truthfully after a rename. Same mechanism covers
+`foundation_whsec_` webhook secrets. (Wire-side description: `api.md` §1.)
 
 ### email_verifications  (`emailver_`)
+
+**Sign-off:** _unsigned_
 
 | column     | type        | null? | notes                               |
 | ---------- | ----------- | ----- | ----------------------------------- |
@@ -196,6 +221,8 @@ Dormant at launch (no verification requirement yet); the table exists so enablin
 verification later is a feature flag, not a migration.
 
 ### password_resets  (`pwreset_`)
+
+**Sign-off:** _unsigned_
 
 | column     | type        | null? | notes                               |
 | ---------- | ----------- | ----- | ----------------------------------- |

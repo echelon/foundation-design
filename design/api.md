@@ -17,7 +17,7 @@ generation planes: `api_any.md`, `api_model_specific.md`, `apis_llm.md`.
 
 | Concern        | Convention                                                                                                                                                                     |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Auth (API)     | Canonical: `Authorization: Bearer foundation_api_...`, `source=api_key` — three more accepted forms below                                                                                        |
+| Auth (API)     | Canonical: `Authorization: Bearer foundation_api_...`, `source=api_key` — three more accepted forms below                                                                      |
 | Auth (console) | Session cookie; same endpoints, `source=dashboard` recorded on jobs                                                                                                            |
 | Auth (MCP)     | Same API keys via the MCP transport; `source=mcp` recorded (see `mcp.md`)                                                                                                      |
 | Versioning     | Date version pinned per account; override header `Foundation-Version: 2026-07-04`                                                                                              |
@@ -42,8 +42,14 @@ Query-param keys (`?api_key=`) are **rejected** — they leak into logs and refe
 
 **API key format:** `foundation_api_{40-char Crockford}` — service-declaring on sight
 (GitHub-style), double-click-copyable, greppable in leaked-secret scanners. No test/live split:
-everything costs real money, so a Stripe-style sandbox axis would be a lie. (`foundation`
-swaps with the real product name.)
+everything costs real money, so a Stripe-style sandbox axis would be a lie.
+
+**The prefix is config, not contract (2026-07-14):** verification accepts a configured set of
+prefixes — one canonical (used to mint) plus legacy ones kept for compatibility — and keys
+resolve by hash, with the prefix serving only recognition. Renaming the service means adding
+a new canonical prefix and demoting `foundation_api_` to legacy; no key is ever invalidated
+by a rename, and docs/scanner patterns list all accepted prefixes. (Storage side:
+`accounts.md` §2 api_keys.)
 
 ## 2. Errors & failure codes
 
@@ -70,29 +76,58 @@ One envelope for every non-2xx response:
 - `details` — type-specific structured payload; additive, never breaking.
 - `request_id` — correlates to the logs product.
 
-### Generation failure codes (user-facing; on failed jobs, not HTTP errors)
+### `FailureCode` — the generation-failure enum (user-facing; on failed jobs, not HTTP errors)
 
-`jobs.failure_code` — why a generation failed after acceptance. **bt: edit this list freely.**
+`jobs.failure_code` — why a generation failed after acceptance. A proper first-class enum
+(PROMOTED 2026-07-14), hand-written in `crates/core/enums` with the usual explicit serde
+renames and golden tests (`enums.md`). **bt: edit the value list freely** — this table stays
+the authority; the enum mirrors it.
 
-| Code                     | Meaning                                                    |
-| ------------------------ | ---------------------------------------------------------- |
-| `content_policy_input`   | Prompt or input media rejected by provider moderation      |
-| `content_policy_output`  | Result generated but blocked by provider output moderation |
-| `face_or_person_blocked` | Provider refused due to real-person/face/celebrity policy  |
-| `copyright_blocked`      | Provider refused due to IP/copyrighted-character policy    |
-| `invalid_input`          | Provider rejected params we couldn't pre-validate          |
-| `input_fetch_failed`     | Input URL/file couldn't be retrieved                       |
-| `input_unsupported`      | Input format/resolution/duration outside provider limits   |
-| `provider_error`         | Upstream 5xx / opaque failure                              |
-| `provider_timeout`       | Upstream exceeded our deadline                             |
-| `provider_capacity`      | Upstream throttled or over capacity (429)                  |
-| `provider_deprecated`    | Model retired upstream mid-flight                          |
-| `canceled`               | User canceled                                              |
-| `expired`                | Job passed `expires_at` before completion                  |
-| `internal`               | Our bug — auto-refunded and alarmed                        |
+Structure follows ArtCraft's `GenerateError`/`*Reason` pattern — categorized, with the policy
+questions answered *on the enum* instead of scattered through worker code — but flattened to
+one wire level, since this is a DB/API value, not an internal error type:
 
-Every failure code maps to refund behavior (all of the above refund in full except `canceled`
-after dispatch, which is policy TBD per provider — most upstreams charge us anyway).
+```rust
+pub enum FailureCode {
+  #[serde(rename = "content_policy_input")]
+  ContentPolicyInput,
+  // ... one variant per row below
+}
+
+pub enum FailureCategory { Moderation, BadInput, Provider, Lifecycle, Internal }
+
+impl FailureCode {
+  pub const fn category(self) -> FailureCategory { /* exhaustive match */ }
+  pub const fn refunds_in_full(self) -> bool     { /* exhaustive match */ }
+  pub const fn is_customer_actionable(self) -> bool { /* can changing the request fix it? */ }
+}
+```
+
+| Code                     | Category   | Meaning                                                    |
+| ------------------------ | ---------- | ---------------------------------------------------------- |
+| `content_policy_input`   | moderation | Prompt or input media rejected by provider moderation      |
+| `content_policy_output`  | moderation | Result generated but blocked by provider output moderation |
+| `face_or_person_blocked` | moderation | Provider refused due to real-person/face/celebrity policy  |
+| `copyright_blocked`      | moderation | Provider refused due to IP/copyrighted-character policy    |
+| `invalid_input`          | bad_input  | Provider rejected params we couldn't pre-validate          |
+| `input_fetch_failed`     | bad_input  | Input URL/file couldn't be retrieved                       |
+| `input_unsupported`      | bad_input  | Input format/resolution/duration outside provider limits   |
+| `provider_error`         | provider   | Upstream 5xx / opaque failure                              |
+| `provider_timeout`       | provider   | Upstream exceeded our deadline                             |
+| `provider_capacity`      | provider   | Upstream throttled or over capacity (429)                  |
+| `provider_deprecated`    | provider   | Model retired upstream mid-flight                          |
+| `canceled`               | lifecycle  | User canceled                                              |
+| `expired`                | lifecycle  | Job passed `expires_at` before completion                  |
+| `internal`               | internal   | Our bug — auto-refunded and alarmed                        |
+
+- `category()` drives grouping in the console and docs (moderation vs bad_input is exactly
+  the "was this my fault?" question customers ask); `moderation` + `bad_input` are
+  customer-actionable, `provider` + `internal` are not.
+- `refunds_in_full()` is true for every code except `canceled` after dispatch (policy TBD
+  per provider — most upstreams charge us anyway).
+- The mapping FROM client errors: each provider client's `{X}SpecificApiError` bucket
+  (`coding_conventions.md` §3) maps onto these codes in `services/jobs` — classification is
+  a client concern, `FailureCode` assignment is policy and lives in one exhaustive match.
 
 ## 3. Generation — shared conventions; the planes live in their own docs
 

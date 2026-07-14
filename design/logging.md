@@ -52,6 +52,8 @@ Monthly `PARTITION BY RANGE (created_at)`; minimal indexes: (account_id, created
 
 ### request_logs  (`rlog_`)
 
+**Sign-off:** _unsigned_
+
 | column              | type        | notes                                                                                          |
 | ------------------- | ----------- | ---------------------------------------------------------------------------------------------- |
 | sid                 | bigint      | identity; never exposed (ids.md §4)                                                            |
@@ -61,7 +63,7 @@ Monthly `PARTITION BY RANGE (created_at)`; minimal indexes: (account_id, created
 | session_id          | text FK     | → sessions; set for dashboard/console requests (exactly one of api_key_id / session_id is set) |
 | job_id              | text FK     | → jobs; see note below                                                                         |
 | end_user_id         | text FK     | → end_users; null                                                                              |
-| source              | text        | `api, dashboard, mcp`                                                                          |
+| source              | text        | `api_key, dashboard, mcp`                                                                      |
 | method              | text        |                                                                                                |
 | path                | text        |                                                                                                |
 | api_version         | date        |                                                                                                |
@@ -88,6 +90,8 @@ identical job pipeline (same billing, same statuses); they differ only in auth, 
 
 ### provider_calls  (`pcall_`)
 
+**Sign-off:** _unsigned_
+
 | column              | type        | notes                                                         |
 | ------------------- | ----------- | ------------------------------------------------------------- |
 | sid                 | bigint      | identity; never exposed (ids.md §4)                           |
@@ -108,6 +112,8 @@ identical job pipeline (same billing, same statuses); they differ only in auth, 
 | created_at          | timestamptz | partition key                                                 |
 
 ### webhook_deliveries  (`whd_`)
+
+**Sign-off:** _unsigned_
 
 | column          | type        | notes                               |
 | --------------- | ----------- | ----------------------------------- |

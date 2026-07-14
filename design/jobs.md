@@ -160,6 +160,8 @@ saying whose queue, and metadata saying why it's still there.
 
 ### jobs  (`job_`)
 
+**Sign-off:** _unsigned_
+
 | column            | type        | notes                                                                                                 |
 | ----------------- | ----------- | ----------------------------------------------------------------------------------------------------- |
 | sid               | bigint      | identity; never exposed (ids.md §4)                                                                   |
@@ -211,7 +213,7 @@ This table IS the customer spend list: job + status + cost in one row.
 
 | Field          | Values                                                                                                                    |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `source`       | `api, dashboard, mcp`                                                                                                     |
+| `source`       | enum `RequestSource`: `api_key, dashboard, mcp`                                                                           |
 | `media_type`   | `image, video, audio, mesh, splat, text`                                                                                  |
 | `api_shape`    | `granular, unified, any, chat`                                                                                            |
 | `status`       | `queued, running, succeeded, failed, canceled, expired`                                                                   |
@@ -225,6 +227,8 @@ NOT included (open question, leaning no): `parent_job_id` — causal lineage ana
 `../reports/jobs-design-considerations-2.md` §4.
 
 ### job_events  (`jevt_`)
+
+**Sign-off:** _unsigned_
 
 | column     | type        | notes                                                                                                                                                           |
 | ---------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |

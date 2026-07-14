@@ -37,6 +37,8 @@ product copy (ledger entry types like `promo` are internal terms).
 
 ### stripe_customers  (`cust_`)
 
+**Sign-off:** _unsigned_
+
 | column             | type        | notes                               |
 | ------------------ | ----------- | ----------------------------------- |
 | sid                | bigint      | identity; never exposed (ids.md §4) |
@@ -46,6 +48,8 @@ product copy (ledger entry types like `promo` are internal terms).
 | created_at         | timestamptz |                                     |
 
 ### payment_methods  (`pm_`)
+
+**Sign-off:** _unsigned_
 
 | column                   | type        | notes                               |
 | ------------------------ | ----------- | ----------------------------------- |
@@ -63,6 +67,8 @@ product copy (ledger entry types like `promo` are internal terms).
 
 ### ledger_entries  (`txn_`) — APPEND-ONLY
 
+**Sign-off:** _unsigned_
+
 | column                   | type        | notes                                                                                            |
 | ------------------------ | ----------- | ------------------------------------------------------------------------------------------------ |
 | sid                      | bigint      | identity; never exposed (ids.md §4)                                                              |
@@ -79,6 +85,8 @@ product copy (ledger entry types like `promo` are internal terms).
 
 ### account_balances
 
+**Sign-off:** _unsigned_
+
 | column         | type        | notes                                                        |
 | -------------- | ----------- | ------------------------------------------------------------ |
 | sid            | bigint      | identity; never exposed (ids.md §4)                          |
@@ -87,6 +95,8 @@ product copy (ledger entry types like `promo` are internal terms).
 | updated_at     | timestamptz |                                                              |
 
 ### auto_refill_rules  (`refill_`)
+
+**Sign-off:** _unsigned_
 
 | column               | type        | notes                               |
 | -------------------- | ----------- | ----------------------------------- |
@@ -105,6 +115,8 @@ product copy (ledger entry types like `promo` are internal terms).
 
 ### spend_limits  (`limit_`)
 
+**Sign-off:** _unsigned_
+
 | column             | type        | notes                               |
 | ------------------ | ----------- | ----------------------------------- |
 | sid                | bigint      | identity; never exposed (ids.md §4) |
@@ -118,6 +130,8 @@ product copy (ledger entry types like `promo` are internal terms).
 | updated_at         | timestamptz |                                     |
 
 ### stripe_events  (`sevt_`)
+
+**Sign-off:** _unsigned_
 
 | column          | type        | notes                               |
 | --------------- | ----------- | ----------------------------------- |
