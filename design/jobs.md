@@ -61,10 +61,10 @@ provider's (their task id exists). The **recommendation** (full analysis + rejec
 alternatives in `../reports/jobs-design-considerations-2.md` §1) is to expose **one `queued`
 status plus a `queue_stage` detail field** rather than two similar-sounding statuses:
 
-| `queue_stage` | Meaning                                                          |
-| ------------- | ----------------------------------------------------------------- |
-| `gateway`     | In OUR queue: charged, dispatch pending (incl. 429 backoff)        |
-| `provider`    | Accepted upstream; sitting in the PROVIDER's queue                 |
+| `queue_stage`    | Meaning                                                          |
+| ---------------- | ---------------------------------------------------------------- |
+| `at_our_gateway` | In OUR queue: charged, dispatch pending (incl. 429 backoff)      |
+| `at_provider`    | Accepted upstream; sitting in the PROVIDER's queue               |
 
 This matches the field (Fal collapses everything pre-runner into `IN_QUEUE`; nobody exposes a
 two-tier queue as statuses), keeps the customer state machine at six values, and dissolves
