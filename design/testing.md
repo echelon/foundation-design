@@ -63,12 +63,19 @@ data. Comprehensive flow tests live here:
 | Webhooks                | Delivery attempts logged, signature valid, Stripe-event dedupe          |
 | Ledger invariants       | `balance_after_micros` chain consistency; balance never negative        |
 
-**Fixtures & helpers live in `db/queries`** (the SQL crate), behind a `test-helpers` feature:
-`create_test_db()`, `fixture_account()`, `fixture_job(...)` builders with sane defaults,
-override-what-you-test — no SQL dump files. **Any crate may import them as a dev-dependency**
-and run its own end-to-end DB integration tests; the no-SQL-outside-`db/queries` rule
-(`coding_conventions.md` §4) is a production-code rule, not a test rule. Fixtures go through
-the same code paths production uses (`services/*`), so schema drift breaks loudly.
+**Fixtures: a dedicated `test_fixtures` crate (REVISED 2026-07-14).** One crate entirely
+designed around creating test data — `create_test_db()`, `fixture_account()`,
+`fixture_user()`, `fixture_session()`, `fixture_job(...)` builders with sane defaults,
+override-what-you-test; no SQL dump files. Rules:
+
+- **Imported as a dev-dependency by any crate** — DB integration tests can live anywhere,
+  next to the code they test. (The no-SQL-outside-`db/queries` rule is production-code only:
+  `coding_conventions.md` §4.)
+- **It contains no SQL of its own** — it creates rows by calling `db/queries` functions
+  (and `services/*` where a flow, not a row, is the fixture), so fixtures exercise the same
+  code paths production uses and schema drift breaks loudly.
+- Account/user/session creation is the expected opener of the huge majority of tests — those
+  builders get the most ergonomic-attention (one line, sane defaults).
 
 **Isolation between tests:** each test runs in its own schema or its own transaction rolled
 back at the end (per-test DB creation à la `#[sqlx::test]` is the fallback for tests that

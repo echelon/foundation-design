@@ -5,7 +5,7 @@
      the top one covers the whole document. Assistants: see ../CLAUDE.md. -->
 
 **Status:** living document (2026-07-05). Postgres. Siblings: `architecture.md`, `api.md`,
-`models.md`, `enums.md`, `jobs.md`, `logging.md`, `end-users.md`, `rankings.md`.
+`models.md`, `enums.md`, `jobs.md`, `files.md`, `logging.md`, `end-users.md`, `rankings.md`.
 
 This doc owns only the tables no sibling claims. Every table defined in a sibling doc appears
 here **only** as a pointer (§7) — never duplicated.
@@ -61,26 +61,14 @@ customers send their own stable IDs or hashes.
 
 **Sign-off:** _unsigned_
 
-**Moved to `jobs.md` (2026-07-05):** jobs, job_events, job_outputs — plus the status machine
+**Moved to `jobs.md` (2026-07-05):** jobs, job_events — plus the status machine
 (internal + external state tables), the jobs API endpoints, and the retry/cancel policy. Jobs
 are the universal primitive (every generation — API, dashboard, MCP, LLM — is a job row);
-the full design lives there. What remains in this section:
+the full design lives there.
 
-### files  (`file_`) — customer inputs
-
-| column           | type        | notes                                |
-| ---------------- | ----------- | ------------------------------------ |
-| id               | text PK     | `file_...`                           |
-| account_id       | text FK     | → accounts                           |
-| purpose          | text        | `input \| avatar \| …`               |
-| storage_key      | text        | R2                                   |
-| cdn_url          | text        |                                      |
-| mime             | text        |                                      |
-| bytes            | bigint      |                                      |
-| checksum_sha256  | text        |                                      |
-| origin           | text        | `upload \| mirrored_url`             |
-| origin_url       | text        | null; when mirrored                  |
-| created_at       | timestamptz |                                      |
+**Moved to `files.md` (2026-07-14):** files (the storage primitive — uploads AND generated
+bytes) and outputs (renamed from `job_outputs`) — the two-table storage/provenance split.
+Nothing remains in this section.
 
 ---
 
@@ -184,7 +172,8 @@ Moved to `payments.md` §6 (with the refund mirror and LLM exception).
 | ------------------------ | ----------- | --------------- |
 | jobs                     | `job_`      | `jobs.md`       |
 | job_events               | `jevt_`     | `jobs.md`       |
-| job_outputs              | `out_`      | `jobs.md`       |
+| outputs                  | `out_`      | `files.md`      |
+| files                    | `file_`     | `files.md`      |
 | accounts                 | `acct_`     | `accounts.md`   |
 | users                    | `user_`     | `accounts.md`   |
 | user_sso_connections     | `sso_`      | `accounts.md`   |

@@ -7,8 +7,8 @@
 **Status:** living document (2026-07-05). Promoted from
 `../reports/read/jobs-design-considerations.md` per bt; the still-open items are analyzed in
 `../reports/jobs-design-considerations-2.md`. Owns the jobs tables (moved from `schema.md`
-§2) and the jobs API (moved from `api.md` §4). Siblings: `schema.md`, `api.md`,
-`payments.md`, `logging.md`.
+§2) and the jobs API (moved from `api.md` §4); outputs moved onward to `files.md`
+(2026-07-14). Siblings: `schema.md`, `api.md`, `payments.md`, `logging.md`, `files.md`.
 
 Decided so far (bt, 2026-07-05):
 
@@ -113,6 +113,47 @@ What we DO retry, invisibly, under a stable status:
 | Transient infra error at dispatch (conn/5xx before acceptance) | Same — safe to retry, nothing charged upstream yet |
 | Provider accepted, then failed               | **Fail fast**: `failed` + refund. No cross-provider re-dispatch of an accepted job — uniform retry semantics across providers is a tar pit (each upstream bills/retries differently); the refund + re-enqueue path is honest and simple |
 
+### Future: customer-controlled retry & fallback (DIRECTIONAL 2026-07-14)
+
+We WILL let customers control retry behavior and fallbacks to other models/providers
+(OpenRouter's `allow_fallbacks` is the precedent). Deliberately under-specified for now; the
+v1 schema must simply tolerate it, and does:
+
+- `retry_policy` (jsonb, null) is reserved on the jobs row — stores the requested policy
+  verbatim; null = today's default behavior.
+- Per-attempt history already lives in `job_events` (`dispatch_attempted` entries can carry
+  the model/provider tried per attempt) + `dispatch_attempts`/`next_dispatch_at`.
+- The job row's `model`/`provider` columns record what **actually ran** — a fallback that
+  switches models updates the resolved pair; the events trail shows the path taken.
+- Open design question for when this lands: pricing across a fallback set under
+  charge-at-enqueue (charge the max of the set, or metered-style worst-case then settle —
+  architecture.md §4's metered mode is the seam).
+
+### The 429/throttle story, spelled out
+
+Sequence when a provider throttles us:
+
+1. Job is charged and `queued` (stage `gateway`). Worker picks the dispatch task, calls the
+   provider, gets 429.
+2. **Nothing customer-visible changes**: status stays `queued`. The dispatch task reschedules
+   with backoff (`next_dispatch_at`), `dispatch_attempts` increments, a `dispatch_attempted`
+   event with the 429 detail lands in `job_events` (visible in `/v1/jobs/{id}/logs`).
+3. Retry succeeds → provider accepts → stage `provider` (their queue), then `running` as
+   normal.
+4. Backoff budget exhausted (or `expires_at` passes first) → `failed` with
+   `provider_capacity` (or `expired`), auto-refund.
+
+Why not a visible `throttled` status: it flaps (429 → accepted → 429 across attempts), every
+customer integration must handle it, and it discloses nothing actionable — the customer can't
+un-throttle Kling. Runway's `THROTTLED` looks like precedent but is a different mechanism:
+it's *their own* per-org concurrency hold ("stored but not enqueued"), i.e. admission
+control, not upstream backoff. Our equivalent of that concept is the 402/spend-limit path at
+admission, not a job state.
+
+With the one-`queued`-status recommendation (§2) the nomenclature confusion dissolves: there
+is no "waiting vs queuing vs pending" triple — there is `queued`, and a `queue_stage` detail
+saying whose queue, and metadata saying why it's still there.
+
 ## 4. Tables
 
 **Sign-off:** _unsigned_
@@ -135,6 +176,7 @@ What we DO retry, invisibly, under a stable status:
 | idempotency_key      | text        | null; UNIQUE (account_id, idempotency_key)                    |
 | request_params       | jsonb       | canonicalized post-coercion params                            |
 | param_adjustments    | jsonb       | what the Any layer pruned/coerced                             |
+| retry_policy         | jsonb       | null; RESERVED — customer retry/fallback policy (§3), unused in v1 |
 | status               | text        | enum, see §2                                                  |
 | queue_stage          | text        | enum, see §2; null unless status = `queued` (naming OPEN)     |
 | dispatch_attempts    | int         | dispatch tries so far (429/backoff visibility)                |
@@ -194,25 +236,11 @@ NOT included (open question, leaning no): `parent_job_id` — causal lineage ana
 Append-only state-machine trail; merged into the customer debug timeline (`logging.md`).
 Retries live HERE (as `dispatch_attempted` events), never as statuses.
 
-### job_outputs  (`out_`)
+### outputs — moved to `files.md` (2026-07-14)
 
-| column           | type        | notes                                        |
-| ---------------- | ----------- | -------------------------------------------- |
-| id               | text PK     | `out_...`                                     |
-| job_id           | text FK     | → jobs                                        |
-| output_index     | int         | 0-based within the job                        |
-| kind             | text        | `image \| video \| audio \| mesh \| splat \| thumbnail \| text` |
-| storage_key      | text        | R2 object key                                 |
-| cdn_url          | text        | durable, ours                                 |
-| mime             | text        |                                               |
-| bytes            | bigint      |                                               |
-| width            | int         | null                                          |
-| height           | int         | null                                          |
-| duration_ms      | int         | null                                          |
-| checksum_sha256  | text        |                                               |
-| provider_url     | text        | original (expiring) upstream URL, for debugging |
-| storage_class    | text        | `hot \| cold` — forever-retention with cold migration |
-| created_at       | timestamptz |                                               |
+Renamed from `job_outputs` (too much to type) and rehomed: **`files.md`** now owns both
+`outputs` (`out_`, pure provenance: job_id, file_id, index, kind, dimensions) and `files`
+(`file_`, the storage primitive the output points at). Jobs have zero or more outputs.
 
 ## 5. API
 

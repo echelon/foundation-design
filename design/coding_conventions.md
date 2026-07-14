@@ -96,10 +96,10 @@ service concern.
   early returns, one call into `services/*`, response mapping. Nothing else.
 - **No SQL outside `db/queries`** — one function per query, sqlx compile-checked
   (`architecture.md` §5). Handlers never see SQL; services call query functions.
-  **Production-code rule only: tests in any crate may hit the database.** `db/queries`
-  exports the test helpers (`create_test_db()`, fixture builders) behind a `test-helpers`
-  feature; other crates import them as a dev-dependency for end-to-end DB integration tests
-  (`testing.md` §3–§5).
+  **Production-code rule only: tests in any crate may hit the database.** The dedicated
+  `test_fixtures` crate (`create_test_db()`, fixture builders — itself SQL-free, calling
+  `db/queries` to create rows) is imported as a dev-dependency wherever a crate wants
+  end-to-end DB integration tests (`testing.md` §3–§5).
 - Clients (`crates/clients/*`) are pure HTTP — no DB dependencies, no service imports.
 - Never hold a DB transaction across provider I/O (`architecture.md` §9); clock is injected,
   not read ambiently (`testing.md` §1).

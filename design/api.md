@@ -197,7 +197,8 @@ actuals charged at completion.
 | `/v1/files/{id}`    | GET    | Metadata + CDN URL                                            |
 
 Inputs may also be plain HTTPS URLs (we mirror them to R2 before dispatch).
-(Naming analysis — files vs media vs artifacts: `../reports/files-naming.md`.)
+Tables (`files` + `outputs`) and the storage/provenance split: **`files.md`**.
+(Naming analysis — files vs media vs artifacts: `../reports/read/files-naming.md`.)
 
 ## 8. Billing & spend
 

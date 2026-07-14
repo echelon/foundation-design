@@ -66,7 +66,7 @@ column and is the **primary key** — used for all FKs, joins, logs, and API res
 table additionally carries a non-exposed **`sequence_id bigint generated always as identity`**
 (declared first, `id` right after): never exposed, never joined on, usable in `ORDER BY`.
 Format spec, entropy math, the keep-the-millisecond-clock decision, and the prefix registry:
-`ids.md`. (Integer-PK analysis: `../reports/identifiers.md`.)
+`ids.md`. (Integer-PK analysis: `../reports/read/identifiers.md`.)
 
 ## 4. Billing policy (DECIDED 2026-07-04)
 
@@ -122,7 +122,9 @@ foundation/
 │   │   └── config/                 # env/config loading, credential pools
 │   ├── db/
 │   │   ├── migrations/
-│   │   └── queries/                # one function per query, sqlx compile-checked
+│   │   ├── queries/                # one function per query, sqlx compile-checked
+│   │   └── test_fixtures/          # fixture builders (accounts, sessions, jobs) — SQL-free,
+│   │                               #   calls queries/; dev-dependency of any crate's DB tests
 │   ├── clients/                    # third-party API clients — pure HTTP, no DB deps
 │   │   ├── client-core/            # shared traits, reqwest factory, retry/backoff,
 │   │   │                           #   four-bucket error taxonomy (from ArtCraft)

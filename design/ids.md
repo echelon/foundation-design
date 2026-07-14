@@ -6,7 +6,7 @@
 
 **Status:** living document (2026-07-14). Peeled from `architecture.md` §3, which now points
 here. Siblings: `architecture.md`, `schema.md`, `naming_conventions.md`. Background analysis:
-`../reports/identifiers.md`.
+`../reports/read/identifiers.md`.
 
 ---
 
@@ -36,7 +36,7 @@ Validation regex per type is therefore trivial and total:
 
 Cost accepted: TEXT keys make PK/FK indexes roughly 3–4× larger than bigint and joins
 slightly slower. At our scale this is noise; debuggability wins. (Full integer-PK analysis:
-`../reports/identifiers.md`.)
+`../reports/read/identifiers.md`.)
 
 ## 2. Entropy & collisions
 
@@ -101,7 +101,7 @@ immediately after it.
   the database, immune to same-millisecond ULID ties and writer clock skew.
 - Rationale: insurance. If it winds up wasteful it can be dropped later (cheap migration);
   retrofitting it later is also possible but backfill order would be lost. This supersedes
-  `../reports/identifiers.md`'s "ledger-only, optional" recommendation — bt decided
+  `../reports/read/identifiers.md`'s "ledger-only, optional" recommendation — bt decided
   belt-and-suspenders everywhere.
 - Not gapless (rollbacks burn values) — anything needing gapless business numbering (invoice
   numbers) is its own counter table.
