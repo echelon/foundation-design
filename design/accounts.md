@@ -102,11 +102,11 @@ email scopes), not to act on the user's behalf. Nothing to leak.
 | code                | text UNIQUE | short human-typeable code (e.g. `7F3K-QT9M`)       |
 | token_hash          | text        | sha256 of the magic-link token (long, unguessable) |
 | invited_by_user_id  | text FK     | → users                                            |
+| accepted_by_user_id | text FK     | → users, null                                      |
+| created_at          | timestamptz |                                                    |
 | expires_at          | timestamptz | default 7 days                                     |
 | accepted_at         | timestamptz | null until accepted                                |
-| accepted_by_user_id | text FK     | → users, null                                      |
 | revoked_at          | timestamptz | null                                               |
-| created_at          | timestamptz |                                                    |
 
 Code and link are two doors to the same invitation: the email contains the magic link; the
 console shows the code for copy/paste into "join with code."
@@ -120,9 +120,9 @@ console shows the code for copy/paste into "join with code."
 | token_hash  | text        | sha256 of cookie value             |
 | ip          | inet        |                                    |
 | user_agent  | text        |                                    |
+| created_at  | timestamptz |                                    |
 | expires_at  | timestamptz |                                    |
 | revoked_at  | timestamptz | null                               |
-| created_at  | timestamptz |                                    |
 
 ### api_keys  (`key_`; secret `foundation_api_...`, shown once)
 
@@ -136,9 +136,9 @@ console shows the code for copy/paste into "join with code."
 | key_prefix          | text        | `foundation_api_` + first 6 payload chars          |
 | key_hash            | text        | sha256; secret never stored                        |
 | last_used_at        | timestamptz | throttled updates                                  |
+| created_at          | timestamptz |                                                    |
 | expires_at          | timestamptz | null = no expiry                                   |
 | revoked_at          | timestamptz | null                                               |
-| created_at          | timestamptz |                                                    |
 
 ### email_verifications  (`emailver_`)
 
@@ -147,9 +147,9 @@ console shows the code for copy/paste into "join with code."
 | id          | text PK     | `emailver_...`                           |
 | user_id     | text FK     | → users                                  |
 | token_hash  | text        | sha256 of emailed token                  |
+| created_at  | timestamptz |                                          |
 | expires_at  | timestamptz |                                          |
 | used_at     | timestamptz | null                                     |
-| created_at  | timestamptz |                                          |
 
 Dormant at launch (no verification requirement yet); the table exists so enabling
 verification later is a feature flag, not a migration.
@@ -161,9 +161,9 @@ verification later is a feature flag, not a migration.
 | id          | text PK     | `pwreset_...`                            |
 | user_id     | text FK     | → users                                  |
 | token_hash  | text        | sha256 of emailed token                  |
+| created_at  | timestamptz |                                          |
 | expires_at  | timestamptz | short (~1h)                              |
 | used_at     | timestamptz | null; single-use                         |
-| created_at  | timestamptz |                                          |
 
 Live at launch (password reset works day one). Reset consumption revokes all existing
 sessions for the user.
