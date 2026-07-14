@@ -13,13 +13,13 @@
 
 **Sign-off:** _unsigned_
 
-| Layer      | Location                                  | Rule                                                        |
-| ---------- | ----------------------------------------- | ----------------------------------------------------------- |
-| Rust       | `crates/core/enums`                       | Pure identifiers: enum + explicit `#[serde(rename)]` per variant + exhaustive serialization tests (ArtCraft style). No behavior beyond conversions |
-| Rust       | `crates/core/catalog`                     | Attaches metadata to the model/provider enums: display names, modalities, schemas, prices, routes. Registry is keyed BY the enums; compile-time completeness checks |
-| Database   | `text` columns + CHECK constraints        | Never native Postgres enums (see `../reports/postgresql-column-types.md`); CHECK lists are generated from the Rust enums by a migration-lint test |
-| TypeScript | `frontend/libs/api-client/src/enums/`     | **Generated, never hand-written** — codegen from the utoipa OpenAPI spec (enums come out as string-literal unions). A CI diff check keeps it fresh |
-| Agent docs | `generated/llms/`                         | Rendered from the same catalog registry (see `agents.md`)   |
+| Layer      | Location                              | Rule                                                                                                                                                                |
+| ---------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Rust       | `crates/core/enums`                   | Pure identifiers: enum + explicit `#[serde(rename)]` per variant + exhaustive serialization tests (ArtCraft style). No behavior beyond conversions                  |
+| Rust       | `crates/core/catalog`                 | Attaches metadata to the model/provider enums: display names, modalities, schemas, prices, routes. Registry is keyed BY the enums; compile-time completeness checks |
+| Database   | `text` columns + CHECK constraints    | Never native Postgres enums (see `../reports/postgresql-column-types.md`); CHECK lists are generated from the Rust enums by a migration-lint test                   |
+| TypeScript | `frontend/libs/api-client/src/enums/` | **Generated, never hand-written** — codegen from the utoipa OpenAPI spec (enums come out as string-literal unions). A CI diff check keeps it fresh                  |
+| Agent docs | `generated/llms/`                     | Rendered from the same catalog registry (see `agents.md`)                                                                                                           |
 
 Serialized form of every variant = the canonical slug (`[a-z0-9_]`), identical across wire,
 DB, TS, and docs.
@@ -107,23 +107,33 @@ compile-time test).
 
 **Sign-off:** _unsigned_
 
-| Enum              | Variants                                                                                       |
-| ----------------- | ---------------------------------------------------------------------------------------------- |
-| `MediaType`       | `image  video  audio  mesh  splat  text`                                                        |
-| `Modality`        | `text_to_image  image_to_image  text_to_video  image_to_video  reference_to_video  video_to_video  keyframe_to_video  text_to_audio  audio_to_audio  speech_to_text  text_to_mesh  image_to_mesh  text_to_splat  image_to_splat  chat` |
-| `JobStatus`       | `queued  running  succeeded  failed  canceled  expired` — authoritative in `jobs.md` §2 (internal = external, decided) |
-| `QueueStage`      | `gateway  provider` — naming OPEN (`jobs.md` §2)                                                |
-| `CanceledBy`      | `user  system  provider` (`jobs.md` §4)                                                         |
-| `JobEventType`    | `created  charged  dispatch_attempted  provider_accepted  poll_tick  provider_completed  output_ingested  webhook_sent  refunded  failed  canceled  expired` — authoritative in `jobs.md` §4 |
-| `ApiShape`        | `granular  unified  any  chat`                                                                  |
-| `RequestSource`   | `api  dashboard  mcp`                                                                           |
-| `LedgerEntryType` | `topup  job_charge  job_refund  adjustment  promo  auto_refill`                                 |
-| `PriceUnit`       | `per_call  per_image  per_video_second  per_audio_second  per_megapixel  per_second_compute  per_million_tokens_in  per_million_tokens_out  per_mesh  per_splat` |
-| `QueueTaskType`   | `dispatch_job  poll_provider  ingest_outputs  deliver_webhook  settle_refund  auto_refill`      |
-| `QueueTaskStatus` | `pending  running  done  dead`                                                                  |
-| `WebhookEvent`    | `job_completed  job_failed` (wire form `job.completed` / `job.failed`)                          |
-| `AccountStatus`   | `active  suspended  closed`                                                                     |
-| `MemberRole`      | `admin  member`                                                                                 |
-| `OutputKind`      | `image  video  audio  mesh  splat  thumbnail  text`                                             |
-| `StorageClass`    | `hot  cold`                                                                                     |
-| `FailureCode`     | authoritative user-facing list lives in `api.md` §2 (bt-editable); this enum mirrors it exactly |
+Audited against the downstream docs 2026-07-14 (QueueStage renamed, LedgerEntryType +2,
+QueueTaskType +2, OutputKind −thumbnail, Modality deferred to models.md, five enums added).
+The **Authority** column names the doc that owns the value set; this table mirrors, never
+leads.
+
+| Enum                    | Values                                                                                                                                                           | Authority                       |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| `MediaType`             | `image, video, audio, mesh, splat, text`                                                                                                                         | `models.md` §2–§9               |
+| `Modality`              | 24 values — not mirrored here (too many to keep in sync)                                                                                                         | `models.md` §11                 |
+| `JobStatus`             | `queued, running, succeeded, failed, canceled, expired` (internal = external, decided)                                                                           | `jobs.md` §2                    |
+| `QueueStage`            | `at_our_gateway, at_provider` — naming OPEN                                                                                                                      | `jobs.md` §2                    |
+| `CanceledBy`            | `user, system, provider`                                                                                                                                         | `jobs.md` §4                    |
+| `JobEventType`          | `created, charged, dispatch_attempted, provider_accepted, poll_tick, provider_completed, output_ingested, webhook_sent, refunded, failed, canceled, expired`     | `jobs.md` §4                    |
+| `ApiShape`              | `granular, unified, any, chat`                                                                                                                                   | `api.md` §3                     |
+| `RequestSource`         | `api, dashboard, mcp`                                                                                                                                            | `jobs.md` §4                    |
+| `LedgerEntryType`       | `topup, job_charge, job_refund, adjustment, promo, auto_refill, chargeback, chargeback_reversal`                                                                 | `payments.md` §2                |
+| `PriceUnit`             | `per_call, per_image, per_video_second, per_audio_second, per_megapixel, per_second_compute, per_million_tokens_in, per_million_tokens_out, per_mesh, per_splat` | catalog (`crates/core/catalog`) |
+| `QueueTaskType`         | `dispatch_job, poll_provider, ingest_outputs, deliver_webhook, settle_refund, auto_refill, rollup_usage, process_stripe_event`                                   | `schema.md` §3                  |
+| `QueueTaskStatus`       | `pending, running, done, dead`                                                                                                                                   | `schema.md` §3                  |
+| `WebhookEvent`          | `job_completed, job_failed` (wire form `job.completed`, `job.failed`)                                                                                            | `api.md` §10                    |
+| `AccountStatus`         | `active, suspended, closed`                                                                                                                                      | `accounts.md` §2                |
+| `MemberRole`            | `admin, member`                                                                                                                                                  | `accounts.md` §2                |
+| `OutputKind`            | `image, video, audio, mesh, splat, text` (`thumbnail` REMOVED 2026-07-14 — thumbnails are derived files, not outputs)                                            | `files.md` §2                   |
+| `StorageClass`          | `hot, cold`                                                                                                                                                      | `files.md` §2                   |
+| `FilePurpose`           | `input, output, avatar` (+ `thumbnail` when files.md §4 lands)                                                                                                   | `files.md` §2                   |
+| `FileOrigin`            | `upload, mirrored_url, generated`                                                                                                                                | `files.md` §2                   |
+| `PaymentMethodStatus`   | `active, detached`                                                                                                                                               | `payments.md` §2                |
+| `SpendLimitWindow`      | `weekly, monthly`                                                                                                                                                | `payments.md` §2                |
+| `ProviderCallDirection` | `request, response, poll_request, poll_response, callback_in`                                                                                                    | `logging.md` §3                 |
+| `FailureCode`           | not mirrored here — bt-editable list; this enum matches it exactly                                                                                               | `api.md` §2                     |

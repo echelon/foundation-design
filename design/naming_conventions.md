@@ -20,13 +20,13 @@ One identifier grammar rules everything serialized: **`^[a-z0-9_]+$`** — lower
 snake_case, no hyphens, no uppercase, no dots. The same slug is the value on the wire, in
 the DB column, in the TS union, and in the docs (`enums.md`).
 
-| Applies to                 | Example                                    |
-| -------------------------- | ------------------------------------------ |
-| Enum serialized values     | `queued`, `image_to_video`, `auto_refill`  |
-| Model IDs                  | `kling_video_v3_pro`                       |
-| JSON field names           | `charged_micros`, `queue_stage`            |
-| Query params               | `?after=`, `?media_type=`                  |
-| Ledger/queue/event types   | `job_charge`, `dispatch_job`               |
+| Applies to               | Example                                   |
+| ------------------------ | ----------------------------------------- |
+| Enum serialized values   | `queued`, `image_to_video`, `auto_refill` |
+| Model IDs                | `kling_video_v3_pro`                      |
+| JSON field names         | `charged_micros`, `queue_stage`           |
+| Query params             | `?after=`, `?media_type=`                 |
+| Ledger/queue/event types | `job_charge`, `dispatch_job`              |
 
 The one exception: **webhook event names on the wire use dots** (`job.completed`,
 `job.failed`) — industry convention (Stripe-style); the internal enum variants stay
@@ -36,19 +36,19 @@ snake_case (`job_completed`).
 
 **Sign-off:** _unsigned_
 
-| Thing                | Convention                                                       |
-| -------------------- | ----------------------------------------------------------------- |
-| Types/traits/variants| `PascalCase` — variant name = PascalCase of its slug (`KlingVideoV3Pro`) |
-| Functions/vars/mods  | `snake_case`; module file name mirrors the item it holds (`task_status.rs` → `TaskStatus`) |
-| Constants            | `SCREAMING_SNAKE_CASE`, declared at top of file after imports     |
-| Library crates       | `snake_case` (ArtCraft: `grok_api_client`, `mysql_queries`)       |
-| Binary/CLI crates    | `kebab-case` (ArtCraft: `db-backfill`; here: `api-server`, `worker`, `admin-cli`) |
-| ID newtypes          | `{Entity}Id` (`JobId`, `AccountId`) — DIVERGES from ArtCraft's `{Entity}Token`; this project says "id" everywhere (`crates/core/ids`), so the types do too |
-| Money newtypes       | Unit-bearing names: `Micros`, `NanoUsd` (`crates/core/money`)     |
-| Constructors         | `new`, `new_from_str`                                             |
-| Accessors/conversions| `as_str`, `to_str`, `from_str`, `all_variants`                    |
-| Error enums          | Four-bucket taxonomy names: `{X}Error` (top), `{X}ClientError`, `{X}SpecificApiError`, `{X}GenericApiError`, plus a `classify_{x}_http_error` free fn (see `coding_conventions.md` §4) |
-| HTTP handlers        | `{verb}_{noun}_handler.rs` under `endpoints/{domain}/` (ArtCraft: `get_session_credits_handler.rs`) |
+| Thing                 | Convention                                                                                                                                                                             |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Types/traits/variants | `PascalCase` — variant name = PascalCase of its slug (`KlingVideoV3Pro`)                                                                                                               |
+| Functions/vars/mods   | `snake_case`; module file name mirrors the item it holds (`task_status.rs` → `TaskStatus`)                                                                                             |
+| Constants             | `SCREAMING_SNAKE_CASE`, declared at top of file after imports                                                                                                                          |
+| Library crates        | `snake_case` (ArtCraft: `grok_api_client`, `mysql_queries`)                                                                                                                            |
+| Binary/CLI crates     | `kebab-case` (ArtCraft: `db-backfill`; here: `api-server`, `worker`, `admin-cli`)                                                                                                      |
+| ID newtypes           | `{Entity}Id` (`JobId`, `AccountId`) — DIVERGES from ArtCraft's `{Entity}Token`; this project says "id" everywhere (`crates/core/ids`), so the types do too                             |
+| Money newtypes        | Unit-bearing names: `Micros`, `NanoUsd` (`crates/core/money`)                                                                                                                          |
+| Constructors          | `new`, `new_from_str`                                                                                                                                                                  |
+| Accessors/conversions | `as_str`, `to_str`, `from_str`, `all_variants`                                                                                                                                         |
+| Error enums           | Four-bucket taxonomy names: `{X}Error` (top), `{X}ClientError`, `{X}SpecificApiError`, `{X}GenericApiError`, plus a `classify_{x}_http_error` free fn (see `coding_conventions.md` §4) |
+| HTTP handlers         | `{verb}_{noun}_handler.rs` under `endpoints/{domain}/` (ArtCraft: `get_session_credits_handler.rs`)                                                                                    |
 
 Serde: **explicit `#[serde(rename = "...")]` on every variant** (DECIDED — `enums.md`).
 This deliberately diverges from ArtCraft's `#[serde(rename_all = "snake_case")]`: the
@@ -73,17 +73,17 @@ Authoritative grammar lives in `models.md` (§1 naming rules, §13 versioning). 
 
 **Sign-off:** _unsigned_
 
-| Thing            | Convention                                                              |
-| ---------------- | ------------------------------------------------------------------------ |
-| Table names      | plural `snake_case`: `jobs`, `ledger_entries`, `auto_refill_rules`       |
-| Columns          | `snake_case`                                                              |
-| Column order     | `sequence_id` first, `id` second (`ids.md` §4), payload columns, timestamps last — `created_at` first among the timestamps (`coding_conventions.md` §7) |
+| Thing            | Convention                                                                                                                                                                                 |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Table names      | plural `snake_case`: `jobs`, `ledger_entries`, `auto_refill_rules`                                                                                                                         |
+| Columns          | `snake_case`                                                                                                                                                                               |
+| Column order     | `sid` first, `id` second (`ids.md` §4), payload columns, timestamps last — `created_at` first among the timestamps (`coding_conventions.md` §7)                                            |
 | FK columns       | **include the referenced table's singular name**: `invited_by_user_id`, `created_by_user_id` — never bare roles (`invited_by`). `{table}_id` forms (`account_id`, `job_id`) already comply |
-| Timestamps       | `{event}_at`, `timestamptz`: `created_at`, `canceled_at`, `last_triggered_at` |
-| Money            | `{name}_micros` (i64 micro-USD); catalog unit rates `{name}_nanos` (nano-USD) |
-| Booleans         | `is_{adj}` (`is_default`) or bare enable-words (`enabled`)                |
-| Enum-ish columns | `text` + CHECK, values = canonical slugs; CHECK lists generated from Rust |
-| Counts/limits    | descriptive suffixes: `daily_max_micros`, `consecutive_failures`          |
+| Timestamps       | `{event}_at`, `timestamptz`: `created_at`, `canceled_at`, `last_triggered_at`                                                                                                              |
+| Money            | `{name}_micros` (i64 micro-USD); catalog unit rates `{name}_nanos` (nano-USD)                                                                                                              |
+| Booleans         | `is_{adj}` (`is_default`) or bare enable-words (`enabled`)                                                                                                                                 |
+| Enum-ish columns | `text` + CHECK, values = canonical slugs; CHECK lists generated from Rust                                                                                                                  |
+| Counts/limits    | descriptive suffixes: `daily_max_micros`, `consecutive_failures`                                                                                                                           |
 
 ## 5. ID prefixes
 
@@ -103,31 +103,31 @@ Registry and format rules: `ids.md` §5. Naming rules for new prefixes:
 
 **Sign-off:** _unsigned_
 
-| Thing           | Convention                                                             |
-| --------------- | ----------------------------------------------------------------------- |
-| Paths           | `/v1/{plural_resource}`: `/v1/jobs`, `/v1/chat/completions` (OpenAI-compat paths kept verbatim) |
-| JSON fields     | `snake_case`, mirroring the Rust serde output exactly — TS DTOs do NOT camelize (ArtCraft practice: `banked_credits`, `user_token` straight through) |
-| Headers         | `Title-Case` with product prefix: `Foundation-Version`, `Foundation-Signature` |
-| Webhook events  | dot-form on the wire: `job.completed`, `job.failed`                     |
-| Query params    | `snake_case`; cursor pagination param is `after`                        |
-| Error codes     | snake_case slugs (`insufficient_balance`, `spend_limit_exceeded`) — registry in `api.md` §2 |
+| Thing          | Convention                                                                                                                                           |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Paths          | `/v1/{plural_resource}`: `/v1/jobs`, `/v1/chat/completions` (OpenAI-compat paths kept verbatim)                                                      |
+| JSON fields    | `snake_case`, mirroring the Rust serde output exactly — TS DTOs do NOT camelize (ArtCraft practice: `banked_credits`, `user_token` straight through) |
+| Headers        | `Title-Case` with product prefix: `Foundation-Version`, `Foundation-Signature`                                                                       |
+| Webhook events | dot-form on the wire: `job.completed`, `job.failed`                                                                                                  |
+| Query params   | `snake_case`; cursor pagination param is `after`                                                                                                     |
+| Error codes    | snake_case slugs (`insufficient_balance`, `spend_limit_exceeded`) — registry in `api.md` §2                                                          |
 
 ## 7. TypeScript / frontend
 
 **Sign-off:** _unsigned_
 
-| Thing               | Convention                                                          |
-| ------------------- | -------------------------------------------------------------------- |
-| Components/pages    | `PascalCase` files and named function exports: `MediaCard.tsx`       |
-| Generated/vendored UI primitives | `kebab-case` (shadcn style): `components/ui/dropdown-menu.tsx` — generated names stay as generated |
-| Hooks               | camelCase `use{Xxx}.ts`: `usePageTitle.ts`                           |
-| Props types         | local `interface {Component}Props`                                   |
-| Interfaces vs types | `interface` preferred; `type` reserved for unions and small aliases  |
-| Enums               | API-boundary enums: string-literal unions generated from the OpenAPI spec (`enums.md`); hand-written `enum` permitted off the wire (`coding_conventions.md` §6) |
-| DTO fields          | `snake_case` (mirror the wire; see §6)                               |
-| Exports             | named exports only; no default exports                               |
-| Path alias          | `@/` → `src/`                                                        |
-| Nx app names        | lowercase single words: `www`, `docs`, `console`                     |
+| Thing                            | Convention                                                                                                                                                      |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Components/pages                 | `PascalCase` files and named function exports: `MediaCard.tsx`                                                                                                  |
+| Generated/vendored UI primitives | `kebab-case` (shadcn style): `components/ui/dropdown-menu.tsx` — generated names stay as generated                                                              |
+| Hooks                            | camelCase `use{Xxx}.ts`: `usePageTitle.ts`                                                                                                                      |
+| Props types                      | local `interface {Component}Props`                                                                                                                              |
+| Interfaces vs types              | `interface` preferred; `type` reserved for unions and small aliases                                                                                             |
+| Enums                            | API-boundary enums: string-literal unions generated from the OpenAPI spec (`enums.md`); hand-written `enum` permitted off the wire (`coding_conventions.md` §6) |
+| DTO fields                       | `snake_case` (mirror the wire; see §6)                                                                                                                          |
+| Exports                          | named exports only; no default exports                                                                                                                          |
+| Path alias                       | `@/` → `src/`                                                                                                                                                   |
+| Nx app names                     | lowercase single words: `www`, `docs`, `console`                                                                                                                |
 
 ## 8. Files & repo layout
 

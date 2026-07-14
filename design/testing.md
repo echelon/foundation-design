@@ -29,16 +29,16 @@ triple-guarded against ever touching production.
 
 **Sign-off:** _unsigned_
 
-| Target                  | What's covered                                                        |
-| ----------------------- | ----------------------------------------------------------------------- |
-| `core/ids`              | Prefix/parse round-trips, Crockford charset, length invariants, collision-shape sanity |
-| `core/money`            | Micro/nano conversions, display formatting, overflow behavior, never-negative invariants |
-| `core/enums`            | Generated batteries: serde round-trip, explicit wire strings, global slug uniqueness, models.md row-count match |
-| `core/catalog`          | Every model has prices/modalities/route; exhaustiveness over `Model::ALL`; alias map acyclic + collision-free; cost function golden tests per price unit |
-| `clients/*`             | Request construction + **response parsing against recorded fixtures** (real captured provider payloads checked into the crate, secrets scrubbed); error mapping to failure codes; retry/backoff classification |
-| `router` / Any layer    | Param pruning/coercion tables, `param_adjustments` reporting, modality inference |
-| `services/jobs`         | The transition function: exhaustive valid-transition matrix + invalid-transition rejection (pure function, no DB) |
-| API request/response types | Serde round-trips, error-envelope shape, webhook signature generation/verification vectors |
+| Target                     | What's covered                                                                                                                                                                                                 |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `core/ids`                 | Prefix/parse round-trips, Crockford charset, length invariants, collision-shape sanity                                                                                                                         |
+| `core/money`               | Micro/nano conversions, display formatting, overflow behavior, never-negative invariants                                                                                                                       |
+| `core/enums`               | Generated batteries: serde round-trip, explicit wire strings, global slug uniqueness, models.md row-count match                                                                                                |
+| `core/catalog`             | Every model has prices/modalities/route; exhaustiveness over `Model::ALL`; alias map acyclic + collision-free; cost function golden tests per price unit                                                       |
+| `clients/*/{name}_client`  | Request construction + **response parsing against recorded fixtures** (real captured provider payloads checked into the crate, secrets scrubbed); error mapping to failure codes; retry/backoff classification |
+| `router` / Any layer       | Param pruning/coercion tables, `param_adjustments` reporting, modality inference                                                                                                                               |
+| `services/jobs`            | The transition function: exhaustive valid-transition matrix + invalid-transition rejection (pure function, no DB)                                                                                              |
+| API request/response types | Serde round-trips, error-envelope shape, webhook signature generation/verification vectors                                                                                                                     |
 
 **Endpoint tests without a database:** Axum routers are plain `tower::Service`s — tests drive
 them in-process with `oneshot()` requests (no socket, no server). Handlers get fake service
@@ -52,16 +52,16 @@ and envelope shape. Anything asserting real persistence graduates to §3.
 Real behavior gets tested against a real Postgres — same major version as production, throwaway
 data. Comprehensive flow tests live here:
 
-| Flow                    | Asserts                                                               |
-| ----------------------- | ----------------------------------------------------------------------- |
-| Signup (all three)      | User+account+membership+session created **in one transaction**; email collision → no silent merge; SSO connection row correctness |
-| Invites (all three doors)| Code + magic-link resolution, expiry, email-mismatch recording          |
-| SSO linking             | Link/unlink guards (≥1 method), cross-user connection conflict          |
-| Admission transaction   | Balance check → ledger entry → balance update → job insert → queue task, atomically; 402 paths (insufficient, spend limit); idempotency replay |
-| Job lifecycle           | Full walk queued → terminal via the transition function; refund on failed/expired/canceled; `job_events` written in the same transaction |
-| Queue worker            | `FOR UPDATE SKIP LOCKED` claim semantics, visibility timeout, dead-lettering |
-| Webhooks                | Delivery attempts logged, signature valid, Stripe-event dedupe          |
-| Ledger invariants       | `balance_after_micros` chain consistency; balance never negative        |
+| Flow                      | Asserts                                                                                                                                        |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Signup (all three)        | User+account+membership+session created **in one transaction**; email collision → no silent merge; SSO connection row correctness              |
+| Invites (all three doors) | Code + magic-link resolution, expiry, email-mismatch recording                                                                                 |
+| SSO linking               | Link/unlink guards (≥1 method), cross-user connection conflict                                                                                 |
+| Admission transaction     | Balance check → ledger entry → balance update → job insert → queue task, atomically; 402 paths (insufficient, spend limit); idempotency replay |
+| Job lifecycle             | Full walk queued → terminal via the transition function; refund on failed/expired/canceled; `job_events` written in the same transaction       |
+| Queue worker              | `FOR UPDATE SKIP LOCKED` claim semantics, visibility timeout, dead-lettering                                                                   |
+| Webhooks                  | Delivery attempts logged, signature valid, Stripe-event dedupe                                                                                 |
+| Ledger invariants         | `balance_after_micros` chain consistency; balance never negative                                                                               |
 
 **Fixtures: a dedicated `test_fixtures` crate (REVISED 2026-07-14).** One crate entirely
 designed around creating test data — `create_test_db()`, `fixture_account()`,
@@ -94,11 +94,11 @@ Database tests are **annotated** so they're selectable as a set:
   configured.
 - Selection both directions, without a test DB nothing red:
 
-| Invocation                            | Runs                                       |
-| ------------------------------------- | ------------------------------------------- |
-| `cargo test`                          | Unit tests; db tests auto-skip if no test DB configured |
-| `cargo test-db` (alias for a nextest filter on the `db_test` group) | Database tests only |
-| CI                                    | Both — Postgres service container is always present, so skips are treated as failures in CI (a guard env var `CI=1` turns "skip" into "error: test DB missing") |
+| Invocation                                                          | Runs                                                                                                                                                            |
+| ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `cargo test`                                                        | Unit tests; db tests auto-skip if no test DB configured                                                                                                         |
+| `cargo test-db` (alias for a nextest filter on the `db_test` group) | Database tests only                                                                                                                                             |
+| CI                                                                  | Both — Postgres service container is always present, so skips are treated as failures in CI (a guard env var `CI=1` turns "skip" into "error: test DB missing") |
 
 ## 5. Test-database configuration & production safety
 

@@ -14,17 +14,17 @@ Siblings: `api.md`, `schema.md`, `ids.md`, `models.md`, `enums.md`, `agents.md`,
 
 **Sign-off:** _unsigned_
 
-| Choice          | Decision                              | Notes                                                        |
-| --------------- | ------------------------------------- | ------------------------------------------------------------ |
-| Web framework   | **Axum** (DECIDED 2026-07-04)         | Work-stealing Tokio runtime, tower middleware, utoipa OpenAPI |
-| Database        | **Postgres** (DECIDED 2026-07-04)     | Managed on DigitalOcean; gotcha checklist in §9               |
-| Cache / hot path| Redis (DO managed Valkey/Redis)       | Rate limiting, session cache                                  |
-| Object storage  | **Cloudflare R2** (DECIDED)           | Zero egress — we host media forever (§8)                      |
-| Frontend hosting| **Netlify** (DECIDED)                 | All three Nx apps                                             |
-| Compute hosting | **DigitalOcean** (DECIDED)            | No AWS. Droplets or App Platform for api-server + worker      |
-| Job queue       | Postgres (`FOR UPDATE SKIP LOCKED`)   | Swappable later (NATS JetStream is the leading candidate)     |
-| Billing         | Stripe via `async-stripe`             |                                                               |
-| Frontend        | Nx + TypeScript + React + Tailwind + Vite |                                                           |
+| Choice           | Decision                                  | Notes                                                         |
+| ---------------- | ----------------------------------------- | ------------------------------------------------------------- |
+| Web framework    | **Axum** (DECIDED 2026-07-04)             | Work-stealing Tokio runtime, tower middleware, utoipa OpenAPI |
+| Database         | **Postgres** (DECIDED 2026-07-04)         | Managed on DigitalOcean; gotcha checklist in §9               |
+| Cache / hot path | Redis (DO managed Valkey/Redis)           | Rate limiting, session cache                                  |
+| Object storage   | **Cloudflare R2** (DECIDED)               | Zero egress — we host media forever (§8)                      |
+| Frontend hosting | **Netlify** (DECIDED)                     | All three Nx apps                                             |
+| Compute hosting  | **DigitalOcean** (DECIDED)                | No AWS. Droplets or App Platform for api-server + worker      |
+| Job queue        | Postgres (`FOR UPDATE SKIP LOCKED`)       | Swappable later (NATS JetStream is the leading candidate)     |
+| Billing          | Stripe via `async-stripe`                 |                                                               |
+| Frontend         | Nx + TypeScript + React + Tailwind + Vite |                                                               |
 
 DigitalOcean managed Postgres: confirmed available — automated daily backups, point-in-time
 recovery, standby nodes for HA, built-in PgBouncer connection pooling, private VPC networking.
@@ -63,7 +63,7 @@ catalog IS the product. This replaces the earlier draft's `providers` / `models`
 The identifier design lives in **`ids.md`**. Summary: the prefixed ULID string
 (`{prefix}_{26-char Crockford}`, e.g. `job_01j0qs3fw9x7k2m5n8p1r4t7v0`) occupies the `id`
 column and is the **primary key** — used for all FKs, joins, logs, and API responses. Every
-table additionally carries a non-exposed **`sequence_id bigint generated always as identity`**
+table additionally carries a non-exposed **`sid bigint generated always as identity`**
 (declared first, `id` right after): never exposed, never joined on, usable in `ORDER BY`.
 Format spec, entropy math, the keep-the-millisecond-clock decision, and the prefix registry:
 `ids.md`. (Integer-PK analysis: `../reports/read/identifiers.md`.)

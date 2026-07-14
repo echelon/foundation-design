@@ -21,15 +21,15 @@ they can never drift from reality.
 All generated from `crates/core/catalog` (the same single source that produces `catalog.json`,
 the OpenAPI spec, and the docs pages). Following the llmstxt.org convention:
 
-| Artifact                             | Content                                                              |
-| ------------------------------------ | -------------------------------------------------------------------- |
-| `/llms.txt`                          | Index: one-paragraph product overview, auth in 3 lines, link list to everything below |
-| `/llms-full.txt`                     | The whole corpus concatenated (for agents that slurp one file)        |
-| `/apis/llms.txt`                     | Platform guide: auth, the three API shapes, cost twins, job lifecycle, polling vs webhooks (no sync mode), idempotency, errors incl. the 402 body, versioning |
-| `/apis/generate/{media}/llms.txt`    | Any-API guide per media type: the superset schema, param coercion rules, model comparison table (params × price × speed) |
-| `/models/{model_id}/llms.txt`        | Everything for ONE model: canonical ID + aliases, modalities, per-modality JSON Schema rendered as a param table, pricing, limits, curl + TypeScript + Python examples (submit → poll → download, and webhook variant), model-specific gotchas |
-| `/openapi.json`                      | Already emitted by utoipa; linked from the index                      |
-| MCP server                           | `generate`/`cost`/`get_job`/`list_models` as tools — the catalog gives us the tool schemas for free. Now designed: see `mcp.md` |
+| Artifact                          | Content                                                                                                                                                                                                                                        |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/llms.txt`                       | Index: one-paragraph product overview, auth in 3 lines, link list to everything below                                                                                                                                                          |
+| `/llms-full.txt`                  | The whole corpus concatenated (for agents that slurp one file)                                                                                                                                                                                 |
+| `/apis/llms.txt`                  | Platform guide: auth, the three API shapes, cost twins, job lifecycle, polling vs webhooks (no sync mode), idempotency, errors incl. the 402 body, versioning                                                                                  |
+| `/apis/generate/{media}/llms.txt` | Any-API guide per media type: the superset schema, param coercion rules, model comparison table (params × price × speed)                                                                                                                       |
+| `/models/{model_id}/llms.txt`     | Everything for ONE model: canonical ID + aliases, modalities, per-modality JSON Schema rendered as a param table, pricing, limits, curl + TypeScript + Python examples (submit → poll → download, and webhook variant), model-specific gotchas |
+| `/openapi.json`                   | Already emitted by utoipa; linked from the index                                                                                                                                                                                               |
+| MCP server                        | `generate`/`cost`/`get_job`/`list_models` as tools — the catalog gives us the tool schemas for free. Now designed: see `mcp.md`                                                                                                                |
 
 Every human docs page also carries a "Copy for LLM" affordance pointing at its llms.txt
 sibling (the thing that makes Fal's pages agent-usable despite the SEO sprawl).

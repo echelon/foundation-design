@@ -28,17 +28,17 @@ retry with fixed params. That loop is the MCP server.
 
 Tool schemas are generated from the same catalog/api-defs source as everything else.
 
-| Tool                | Maps to                              | Notes                                            |
-| ------------------- | ------------------------------------ | ------------------------------------------------ |
-| `list_models`       | `GET /v1/models`                     | Filters: media_type, modality, owner              |
-| `get_model`         | `GET /v1/models/{model}`             | Metadata, prices, modalities                      |
-| `get_model_schema`  | `GET /v1/models/{model}/schema/{m}`  | The JSON Schema agents need to build params       |
-| `cost`              | `POST /v1/any/{media}/cost`          | Any shape; price before committing money          |
-| `generate`          | `POST /v1/any/{media}`               | Any shape (model as param) — one tool per media type keeps schemas tight: `generate_image`, `generate_video`, … |
-| `get_job`           | `GET /v1/jobs/{id}`                  | Status + outputs + failure code                   |
-| `wait_for_job`      | poll loop server-side                | Long-poll up to N seconds so agents don't spin; returns terminal job or timeout-with-status |
-| `get_job_logs`      | `GET /v1/jobs/{id}/logs`             | The debug timeline — agents can self-diagnose     |
-| `get_balance`       | `GET /v1/billing/balance`            | Lets agents pre-check before generating           |
+| Tool               | Maps to                             | Notes                                                                                                           |
+| ------------------ | ----------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `list_models`      | `GET /v1/models`                    | Filters: media_type, modality, owner                                                                            |
+| `get_model`        | `GET /v1/models/{model}`            | Metadata, prices, modalities                                                                                    |
+| `get_model_schema` | `GET /v1/models/{model}/schema/{m}` | The JSON Schema agents need to build params                                                                     |
+| `cost`             | `POST /v1/any/{media}/cost`         | Any shape; price before committing money                                                                        |
+| `generate`         | `POST /v1/any/{media}`              | Any shape (model as param) — one tool per media type keeps schemas tight: `generate_image`, `generate_video`, … |
+| `get_job`          | `GET /v1/jobs/{id}`                 | Status + outputs + failure code                                                                                 |
+| `wait_for_job`     | poll loop server-side               | Long-poll up to N seconds so agents don't spin; returns terminal job or timeout-with-status                     |
+| `get_job_logs`     | `GET /v1/jobs/{id}/logs`            | The debug timeline — agents can self-diagnose                                                                   |
+| `get_balance`      | `GET /v1/billing/balance`           | Lets agents pre-check before generating                                                                         |
 
 Guardrails: `generate_*` tool descriptions state the exact cost behavior (charged at enqueue)
 and instruct agents to call `cost` first when the user hasn't approved a price; an optional

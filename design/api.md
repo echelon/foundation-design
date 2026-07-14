@@ -7,7 +7,7 @@
 **Status:** living document (2026-07-05). Every endpoint served by `api-server`.
 Base URL placeholder: `https://api.example.dev`. Siblings: `architecture.md`, `schema.md`,
 `models.md`, `enums.md`, `logging.md`, `mcp.md`, `end-users.md`, `rankings.md` — and the
-generation planes: `api_all.md`, `api_model_specific.md`, `apis_llm.md`.
+generation planes: `api_any.md`, `api_model_specific.md`, `apis_llm.md`.
 
 ---
 
@@ -15,26 +15,28 @@ generation planes: `api_all.md`, `api_model_specific.md`, `apis_llm.md`.
 
 **Sign-off:** _unsigned_
 
-| Concern         | Convention                                                                     |
-| --------------- | ------------------------------------------------------------------------------ |
-| Auth (API)      | Canonical: `Authorization: Bearer foundation_api_...` — three more accepted forms below |
-| Auth (console)  | Session cookie; same endpoints, `source=dashboard` recorded on jobs             |
-| Auth (MCP)      | Same API keys via the MCP transport; `source=mcp` recorded (see `mcp.md`)       |
-| Versioning      | Date version pinned per account; override header `Foundation-Version: 2026-07-04` |
-| Idempotency     | `Idempotency-Key` header on POSTs; 24h replay window per account                |
-| Sync mode       | **None for media** (DECIDED 2026-07-05) — polling + webhooks only; see `../reports/sync-apis.md`. LLM chat is inherently held-open (that's not a "sync mode", it's the medium) |
-| Errors          | Uniform envelope, §2                                                            |
-| Pagination      | Cursor-based: `?limit=&after=`                                                  |
-| Content         | JSON everywhere; file upload is multipart                                       |
+| Concern        | Convention                                                                                                                                                                     |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Auth (API)     | Canonical: `Authorization: Bearer foundation_api_...`, `source=api_key` — three more accepted forms below                                                                                        |
+| Auth (console) | Session cookie; same endpoints, `source=dashboard` recorded on jobs                                                                                                            |
+| Auth (MCP)     | Same API keys via the MCP transport; `source=mcp` recorded (see `mcp.md`)                                                                                                      |
+| Versioning     | Date version pinned per account; override header `Foundation-Version: 2026-07-04`                                                                                              |
+| Idempotency    | `Idempotency-Key` header on POSTs; 24h replay window per account                                                                                                               |
+| Sync mode      | **None for media** (DECIDED 2026-07-05) — polling + webhooks only; see `../reports/sync-apis.md`. LLM chat is inherently held-open (that's not a "sync mode", it's the medium) |
+| Errors         | Uniform envelope, §2                                                                                                                                                           |
+| Pagination     | Cursor-based: `?limit=&after=`                                                                                                                                                 |
+| Content        | JSON everywhere; file upload is multipart                                                                                                                                      |
 
 **Accepted auth forms** (all resolve to the same key; canonical form is what docs teach):
 
-| Form                                        | Why we accept it                                  |
-| ------------------------------------------- | -------------------------------------------------- |
-| `Authorization: Bearer foundation_api_...`  | Canonical; what OpenAI/Anthropic/OpenRouter trained everyone on |
-| `X-API-Key: foundation_api_...`             | Common in gateway/enterprise tooling (AWS-style)    |
-| `Authorization: Key foundation_api_...`     | Fal's scheme — eases migration of Fal integrations  |
-| `curl -u foundation_api_...:` (Basic, key as username, empty password) | Stripe's curl ergonomics |
+| Form                                                                   | Why we accept it                                                |
+| ---------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `Authorization: Bearer foundation_api_...`                             | Canonical; what OpenAI/Anthropic/OpenRouter trained everyone on |
+| `X-API-Key: foundation_api_...`                                        | Common in gateway/enterprise tooling (AWS-style)                |
+| `Authorization: Key foundation_api_...`                                | Fal's scheme — eases migration of Fal integrations              |
+| `curl -u foundation_api_...:` (Basic, key as username, empty password) | Stripe's curl ergonomics                                        |
+
+Note: You cannot use multiple forms at once, or the server will reject it.
 
 Query-param keys (`?api_key=`) are **rejected** — they leak into logs and referrers.
 
@@ -72,22 +74,22 @@ One envelope for every non-2xx response:
 
 `jobs.failure_code` — why a generation failed after acceptance. **bt: edit this list freely.**
 
-| Code                      | Meaning                                                        |
-| ------------------------- | --------------------------------------------------------------- |
-| `content_policy_input`    | Prompt or input media rejected by provider moderation           |
-| `content_policy_output`   | Result generated but blocked by provider output moderation      |
-| `face_or_person_blocked`  | Provider refused due to real-person/face/celebrity policy       |
-| `copyright_blocked`       | Provider refused due to IP/copyrighted-character policy         |
-| `invalid_input`           | Provider rejected params we couldn't pre-validate               |
-| `input_fetch_failed`      | Input URL/file couldn't be retrieved                            |
-| `input_unsupported`       | Input format/resolution/duration outside provider limits        |
-| `provider_error`          | Upstream 5xx / opaque failure                                   |
-| `provider_timeout`        | Upstream exceeded our deadline                                  |
-| `provider_capacity`       | Upstream throttled or over capacity (429)                       |
-| `provider_deprecated`     | Model retired upstream mid-flight                               |
-| `canceled`                | User canceled                                                   |
-| `expired`                 | Job passed `expires_at` before completion                       |
-| `internal`                | Our bug — auto-refunded and alarmed                             |
+| Code                     | Meaning                                                    |
+| ------------------------ | ---------------------------------------------------------- |
+| `content_policy_input`   | Prompt or input media rejected by provider moderation      |
+| `content_policy_output`  | Result generated but blocked by provider output moderation |
+| `face_or_person_blocked` | Provider refused due to real-person/face/celebrity policy  |
+| `copyright_blocked`      | Provider refused due to IP/copyrighted-character policy    |
+| `invalid_input`          | Provider rejected params we couldn't pre-validate          |
+| `input_fetch_failed`     | Input URL/file couldn't be retrieved                       |
+| `input_unsupported`      | Input format/resolution/duration outside provider limits   |
+| `provider_error`         | Upstream 5xx / opaque failure                              |
+| `provider_timeout`       | Upstream exceeded our deadline                             |
+| `provider_capacity`      | Upstream throttled or over capacity (429)                  |
+| `provider_deprecated`    | Model retired upstream mid-flight                          |
+| `canceled`               | User canceled                                              |
+| `expired`                | Job passed `expires_at` before completion                  |
+| `internal`               | Our bug — auto-refunded and alarmed                        |
 
 Every failure code maps to refund behavior (all of the above refund in full except `canceled`
 after dispatch, which is policy TBD per provider — most upstreams charge us anyway).
@@ -103,11 +105,11 @@ after enqueue.)
 
 **The shapes moved to their own docs (2026-07-14), each with its own path namespace:**
 
-| Plane              | Namespace                             | Doc                     |
-| ------------------ | ------------------------------------- | ------------------------ |
-| Any ("all"-shaped) | `/v1/any/{media_type}` (+ `/cost`)    | `api_all.md`             |
-| Unified + Granular | `/v1/models/{model}/generate[...]` (+ `/cost[...]`) | `api_model_specific.md`  |
-| Chat (OpenAI-compat)| `/v1/chat/completions`               | `apis_llm.md`            |
+| Plane                | Namespace                                           | Doc                     |
+| -------------------- | --------------------------------------------------- | ----------------------- |
+| Any                  | `/v1/any/{media_type}` (+ `/cost`)                  | `api_any.md`            |
+| Unified + Granular   | `/v1/models/{model}/generate[...]` (+ `/cost[...]`) | `api_model_specific.md` |
+| Chat (OpenAI-compat) | `/v1/chat/completions`                              | `apis_llm.md`           |
 
 (The previous `/v1/generate/*` + `/v1/cost/*` paths are retired; alternatives-considered
 tables live in the plane docs. Any branding: DECIDED 2026-07-05, replacing "omni" —
@@ -174,20 +176,20 @@ billing, and the reserved LLM paths.
 
 **Sign-off:** _unsigned_
 
-| Endpoint                                   | Method | Purpose                                        |
-| ------------------------------------------ | ------ | ---------------------------------------------- |
-| `/v1/models`                               | GET    | Filter by media_type, owner, modality, status  |
-| `/v1/models/{model}`                       | GET    | Metadata, modalities, prices, deprecation info |
-| `/v1/models/{model}/schema/{modality}`     | GET    | JSON Schema for that endpoint                  |
+| Endpoint                               | Method | Purpose                                        |
+| -------------------------------------- | ------ | ---------------------------------------------- |
+| `/v1/models`                           | GET    | Filter by media_type, owner, modality, status  |
+| `/v1/models/{model}`                   | GET    | Metadata, modalities, prices, deprecation info |
+| `/v1/models/{model}/schema/{modality}` | GET    | JSON Schema for that endpoint                  |
 
 ## 7. Files
 
 **Sign-off:** _unsigned_
 
-| Endpoint            | Method | Purpose                                                      |
-| ------------------- | ------ | ------------------------------------------------------------ |
-| `/v1/files`         | POST   | Multipart upload → `file_...` usable in any input slot       |
-| `/v1/files/{id}`    | GET    | Metadata + CDN URL                                            |
+| Endpoint         | Method | Purpose                                                |
+| ---------------- | ------ | ------------------------------------------------------ |
+| `/v1/files`      | POST   | Multipart upload → `file_...` usable in any input slot |
+| `/v1/files/{id}` | GET    | Metadata + CDN URL                                     |
 
 Inputs may also be plain HTTPS URLs (we mirror them to R2 before dispatch).
 Tables (`files` + `outputs`) and the storage/provenance split: **`files.md`**.
@@ -197,15 +199,15 @@ Tables (`files` + `outputs`) and the storage/provenance split: **`files.md`**.
 
 **Sign-off:** _unsigned_
 
-| Endpoint                        | Method         | Purpose                                                  |
-| ------------------------------- | -------------- | -------------------------------------------------------- |
-| `/v1/billing/balance`           | GET            | Current balance (micros + display)                        |
-| `/v1/billing/ledger`            | GET            | Ledger entries: topups, charges, refunds — the spend list |
-| `/v1/billing/usage`             | GET            | Rollups: spend by day / model / api key / end_user        |
-| `/v1/billing/topup`             | POST           | Create Stripe payment for a chosen amount                 |
-| `/v1/billing/payment-methods`   | GET/POST/DELETE| Card on file management                                   |
-| `/v1/billing/auto-refill`       | GET/PUT        | Threshold, refill amount, daily max, enable/disable       |
-| `/v1/billing/spend-limits`      | GET/PUT        | Weekly/monthly caps (behavior: block)                     |
+| Endpoint                      | Method          | Purpose                                                   |
+| ----------------------------- | --------------- | --------------------------------------------------------- |
+| `/v1/billing/balance`         | GET             | Current balance (micros + display)                        |
+| `/v1/billing/ledger`          | GET             | Ledger entries: topups, charges, refunds — the spend list |
+| `/v1/billing/usage`           | GET             | Rollups: spend by day / model / api key / end_user        |
+| `/v1/billing/topup`           | POST            | Create Stripe payment for a chosen amount                 |
+| `/v1/billing/payment-methods` | GET/POST/DELETE | Card on file management                                   |
+| `/v1/billing/auto-refill`     | GET/PUT         | Threshold, refill amount, daily max, enable/disable       |
+| `/v1/billing/spend-limits`    | GET/PUT         | Weekly/monthly caps (behavior: block)                     |
 
 "Show users what they've spent": `GET /v1/jobs` (each row: job, status, model, cost) is the
 per-job view; `/v1/billing/ledger` is the money view; `/v1/billing/usage` is the chart view.
@@ -214,17 +216,17 @@ per-job view; `/v1/billing/ledger` is the money view; `/v1/billing/usage` is the
 
 **Sign-off:** _unsigned_
 
-| Endpoint                          | Method           | Purpose                                            |
-| --------------------------------- | ---------------- | -------------------------------------------------- |
-| `/v1/account`                     | GET/PATCH        | Account settings                                    |
-| `/v1/account/members`             | GET              | Team list                                           |
-| `/v1/account/members/{id}`        | PATCH/DELETE     | Role change, removal                                |
-| `/v1/account/invitations`         | GET/POST/DELETE  | Invite teammates                                    |
-| `/v1/api-keys`                    | GET/POST         | Create: `title` (immutable), `description`, `expires_at?` — `foundation_api_...` secret shown once |
-| `/v1/api-keys/{id}`               | PATCH/DELETE     | PATCH edits description only; DELETE = revoke       |
-| `/v1/webhook-secret`              | GET/POST         | View/rotate `foundation_whsec_...` (two active during rotation) |
-| `/v1/auth/signup|login|logout`    | POST             | Console session auth                                |
-| `/v1/auth/password-reset`         | POST             | Token flow                                          |
+| Endpoint                         | Method          | Purpose                                                                                            |
+| -------------------------------- | --------------- | -------------------------------------------------------------------------------------------------- |
+| `/v1/account`                    | GET/PATCH       | Account settings                                                                                   |
+| `/v1/account/members`            | GET             | Team list                                                                                          |
+| `/v1/account/members/{id}`       | PATCH/DELETE    | Role change, removal                                                                               |
+| `/v1/account/invitations`        | GET/POST/DELETE | Invite teammates                                                                                   |
+| `/v1/api-keys`                   | GET/POST        | Create: `title` (immutable), `description`, `expires_at?` — `foundation_api_...` secret shown once |
+| `/v1/api-keys/{id}`              | PATCH/DELETE    | PATCH edits description only; DELETE = revoke                                                      |
+| `/v1/webhook-secret`             | GET/POST        | View/rotate `foundation_whsec_...` (two active during rotation)                                    |
+| `/v1/auth/{signup,login,logout}` | POST            | Console session auth                                                                               |
+| `/v1/auth/password-reset`        | POST            | Token flow                                                                                         |
 
 ## 10. Outbound webhooks (us → customer)
 
@@ -257,10 +259,10 @@ is stdlib-only for customers, and revocation is per-account. (Comparison recorde
 
 **Sign-off:** _unsigned_
 
-| Endpoint                  | Method | Purpose                                              |
-| ------------------------- | ------ | ----------------------------------------------------- |
-| `/v1/public/rankings`     | GET    | Aggregated model usage stats (see `rankings.md`)      |
-| `/llms.txt`               | GET    | Redirect to docs-domain agent docs (see `agents.md`)  |
+| Endpoint              | Method | Purpose                                              |
+| --------------------- | ------ | ---------------------------------------------------- |
+| `/v1/public/rankings` | GET    | Aggregated model usage stats (see `rankings.md`)     |
+| `/llms.txt`           | GET    | Redirect to docs-domain agent docs (see `agents.md`) |
 
 ## 13. Reserved, not built
 

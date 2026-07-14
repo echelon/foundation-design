@@ -5,7 +5,7 @@
      the top one covers the whole document. Assistants: see ../CLAUDE.md. -->
 
 **Status:** living document (2026-07-14). Peeled from `api.md` §5. One of the three
-generation planes: this doc (chat), `api_all.md` (the Any API), `api_model_specific.md`
+generation planes: this doc (chat), `api_any.md` (the Any API), `api_model_specific.md`
 (unified + granular). Shared conventions (auth, errors, idempotency, cost twins, `end_user`):
 `api.md` §1–§3.
 
@@ -21,12 +21,12 @@ the base URL and key. So the namespace isn't ours to invent: `POST /v1/chat/comp
 verbatim. Anything we add to the LLM plane lives beside it under paths the ecosystem already
 expects (`/v1/completions`, `/v1/embeddings`, `/v1/batch` — reserved, §6).
 
-| Endpoint                | Method | Status    | Purpose                                        |
-| ----------------------- | ------ | --------- | ---------------------------------------------- |
-| `/v1/chat/completions`  | POST   | v1        | OpenAI-compatible chat; SSE via `stream: true` |
-| `/v1/completions`       | POST   | RESERVED  | Legacy text-completion (RP vertical; `future-roadmap.md` §5) |
-| `/v1/embeddings`        | POST   | RESERVED  | (`future-roadmap.md` §1)                        |
-| `/v1/batch`             | POST   | RESERVED  | (`future-roadmap.md` §1)                        |
+| Endpoint               | Method | Status   | Purpose                                                      |
+| ---------------------- | ------ | -------- | ------------------------------------------------------------ |
+| `/v1/chat/completions` | POST   | v1       | OpenAI-compatible chat; SSE via `stream: true`               |
+| `/v1/completions`      | POST   | RESERVED | Legacy text-completion (RP vertical; `future-roadmap.md` §5) |
+| `/v1/embeddings`       | POST   | RESERVED | (`future-roadmap.md` §1)                                     |
+| `/v1/batch`            | POST   | RESERVED | (`future-roadmap.md` §1)                                     |
 
 Execution model: **synchronous pass-through** — held-open HTTP (or SSE), bypasses the job
 queue entirely (no polling, no webhooks), but writes a `jobs` row (`media_type = text`,
@@ -40,15 +40,15 @@ and rankings are uniform with media (`architecture.md` §7).
 `model` = our catalog slug (`deepseek_v4`, `openai_gpt_v5_1_snap_20251113`, `..._latest` —
 full `ModelRef` grammar, `models.md` §13). Everything else is the OpenAI chat schema:
 
-| Param class                     | Handling                                                       |
-| ------------------------------- | --------------------------------------------------------------- |
-| Core (`messages`, `max_tokens`/`max_completion_tokens`, `stream`, `stop`, `n=1`) | Honored everywhere |
-| Standard samplers (`temperature`, `top_p`, `seed`, `presence_penalty`, `frequency_penalty`, `logit_bias`, `logprobs`) | **Passed through** to the provider; never reinterpreted by us |
-| Extended samplers (`top_k`, `min_p`, `repetition_penalty`; later DRY/XTC) | **Pass-through when the provider supports them**, pruned otherwise — the sampler pass-through commitment from the RP analysis (`future-roadmap.md` §5) |
-| Tools (`tools`, `tool_choice`, parallel calls) | Translated per provider (well-trodden adapter territory)  |
-| `response_format` (json_object / json_schema) | Translated where supported; pruned + reported where not   |
-| `user`                          | Mapped to our `end_user` (`end-users.md`); `end_user` also accepted directly |
-| Unknown params                  | Pruned, recorded as `param_adjustments` on the job + debug logs; never a 400 (compat: OpenAI clients send vendor params freely) |
+| Param class                                                                                                           | Handling                                                                                                                                               |
+| --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Core (`messages`, `max_tokens`/`max_completion_tokens`, `stream`, `stop`, `n=1`)                                      | Honored everywhere                                                                                                                                     |
+| Standard samplers (`temperature`, `top_p`, `seed`, `presence_penalty`, `frequency_penalty`, `logit_bias`, `logprobs`) | **Passed through** to the provider; never reinterpreted by us                                                                                          |
+| Extended samplers (`top_k`, `min_p`, `repetition_penalty`; later DRY/XTC)                                             | **Pass-through when the provider supports them**, pruned otherwise — the sampler pass-through commitment from the RP analysis (`future-roadmap.md` §5) |
+| Tools (`tools`, `tool_choice`, parallel calls)                                                                        | Translated per provider (well-trodden adapter territory)                                                                                               |
+| `response_format` (json_object / json_schema)                                                                         | Translated where supported; pruned + reported where not                                                                                                |
+| `user`                                                                                                                | Mapped to our `end_user` (`end-users.md`); `end_user` also accepted directly                                                                           |
+| Unknown params                                                                                                        | Pruned, recorded as `param_adjustments` on the job + debug logs; never a 400 (compat: OpenAI clients send vendor params freely)                        |
 
 ## 3. Response
 
@@ -89,7 +89,7 @@ returns the worst-case estimate + the rates (same body, no call, no charge).
   lingua franca; revisit on demand.
 - Server-side web search / tool execution: roadmap (`future-roadmap.md` §1).
 
-LLMs are also reachable through the other two planes — `POST /v1/any/text` (`api_all.md` §4)
+LLMs are also reachable through the other two planes — `POST /v1/any/text` (`api_any.md` §4)
 and `POST /v1/models/{model}/generate/chat` (`api_model_specific.md` §4) — both synchronous,
 both speaking our **canonical** chat schema rather than the OpenAI wire dialect. This plane
 exists for compatibility; those exist for uniformity.

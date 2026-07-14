@@ -64,11 +64,11 @@ use_small_heuristics = "Off"   # all *_width knobs high: wrapping is author-cont
 
 Two regimes, by layer:
 
-| Layer                          | Regime                                                       |
-| ------------------------------ | ------------------------------------------------------------ |
-| Services / handlers / workers  | `anyhow` internally; convert at the boundary to the typed web error (log-then-convert: `.map_err(|err| { error!(...); ApiError::from_error(err) })?`) |
-| `crates/clients/*` (API clients)| Hand-rolled **four-bucket taxonomy** (below) — typed, no anyhow |
-| `unwrap`/`expect`              | Never in production paths; fine in tests, generators, and provably-infallible spots (`expect("static json")`) |
+| Layer                            | Regime                                                                                                        |     |                                                |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------- | --- | ---------------------------------------------- |
+| Services / handlers / workers    | `anyhow` internally; convert at the boundary to the typed web error (log-then-convert: `.map_err(             | err | { error!(...); ApiError::from_error(err) })?`) |
+| `crates/clients/*` (API clients) | Hand-rolled **four-bucket taxonomy** (below) — typed, no anyhow                                               |     |                                                |
+| `unwrap`/`expect`                | Never in production paths; fine in tests, generators, and provably-infallible spots (`expect("static json")`) |     |                                                |
 
 The four-bucket client taxonomy (one file per bucket under `src/error/`):
 
@@ -156,7 +156,7 @@ Full strategy in `testing.md`; style rules here:
   (then `updated_at`/event timestamps in whatever order reads best). Dimensional timestamps
   that are part of a table's key (e.g. a rollup's `period_start`) are data, not row
   metadata, and stay with the payload columns.
-- Column order overall: `sequence_id`, `id`, FKs, payload, timestamps (`ids.md` §4,
+- Column order overall: `sid`, `id`, FKs, payload, timestamps (`ids.md` §4,
   `naming_conventions.md` §4).
 - Every design-doc table lists a `null?` column; nullability is decided at design time, not
   at migration time.

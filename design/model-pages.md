@@ -15,17 +15,17 @@ the three things competitors don't do: release dates, change history, and a real
 
 One page per model, sections (anchored, not separate URLs):
 
-| Section       | Content                                                                        |
-| ------------- | -------------------------------------------------------------------------------- |
-| Header        | Display name, canonical ID (one-click copy), owner, media type, status badge (preview/active/deprecated + shutdown dates), price summary |
-| **Gallery**   | Dozens of curated samples per image/video model — output + full prompt + params, filterable by modality/style. The breadth showcase (§3) |
-| **Released**  | First-release date of the model (upstream's release, not our integration date)   |
-| **Changelog** | Every change since release: upstream snapshot/behavior changes, our price changes, param additions, deprecation notices — dated entries (§4) |
-| Playground    | Sandbox form rendered from the modality JSON Schemas; cookie-auth; runs bill the account normally |
+| Section       | Content                                                                                                                                                |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Header        | Display name, canonical ID (one-click copy), owner, media type, status badge (preview/active/deprecated + shutdown dates), price summary               |
+| **Gallery**   | Dozens of curated samples per image/video model — output + full prompt + params, filterable by modality/style. The breadth showcase (§3)               |
+| **Released**  | First-release date of the model (upstream's release, not our integration date)                                                                         |
+| **Changelog** | Every change since release: upstream snapshot/behavior changes, our price changes, param additions, deprecation notices — dated entries (§4)           |
+| Playground    | Sandbox form rendered from the modality JSON Schemas; cookie-auth; runs bill the account normally                                                      |
 | API           | Per-modality param tables (from the same schemas), curl/TS/Python examples (generated — correct by construction), polling + webhook lifecycle snippets |
-| Pricing       | Unit prices per modality, worked examples ("5s of 1080p ≈ $0.35")               |
-| Modalities    | Which tasks this model supports, with links to each granular endpoint's docs     |
-| Related       | Other versions/snapshots of the family, alternatives in the media type           |
+| Pricing       | Unit prices per modality, worked examples ("5s of 1080p ≈ $0.35")                                                                                      |
+| Modalities    | Which tasks this model supports, with links to each granular endpoint's docs                                                                           |
+| Related       | Other versions/snapshots of the family, alternatives in the media type                                                                                 |
 
 **100% public. No login wall, ever** (Fal gating docs behind auth is an own goal — docs are
 top-of-funnel). Playground *execution* requires an account; *reading* everything requires
@@ -35,12 +35,12 @@ nothing.
 
 **Sign-off:** _unsigned_
 
-| URL                                          | What                                            |
-| -------------------------------------------- | ------------------------------------------------ |
-| `docs.example.dev/models`                    | Catalog index: filter by media type, modality, owner, price; comparison view |
-| `docs.example.dev/models/{model_id}`         | THE model page (all sections above, anchored: `#gallery`, `#api`, `#pricing`, `#changelog`) |
-| `docs.example.dev/models/{model_id}/llms.txt`| Agent-docs sibling (agents.md)                    |
-| `docs.example.dev/generate/{media}`          | The Any-API per-media guides with the cross-model comparison matrix |
+| URL                                           | What                                                                                        |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `docs.example.dev/models`                     | Catalog index: filter by media type, modality, owner, price; comparison view                |
+| `docs.example.dev/models/{model_id}`          | THE model page (all sections above, anchored: `#gallery`, `#api`, `#pricing`, `#changelog`) |
+| `docs.example.dev/models/{model_id}/llms.txt` | Agent-docs sibling (agents.md)                                                              |
+| `docs.example.dev/generate/{media}`           | The Any-API per-media guides with the cross-model comparison matrix                         |
 
 One page per model (not per modality — modalities are sections/tabs within it), matching the
 decision that modalities are tabs, not page sprawl. Canonical URLs use the canonical slug;

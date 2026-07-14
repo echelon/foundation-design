@@ -46,6 +46,8 @@ Rules for assistants:
 
 - All markdown tables: pad cells so the `|` pipes align vertically. Never sparse tables.
 - Keep table columns narrow (terse cells) so padding stays maintainable.
+- **Never escape pipes (`\|`) inside table cells** — write value sets as comma lists
+  (`api, dashboard, mcp`), never pipe-separated alternations.
 
 ## Schema naming conventions
 

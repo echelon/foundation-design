@@ -28,15 +28,15 @@ auto-upsert, customer-supplied `external_id` ≤256 chars, our internal `enduser
 
 `end_users` table and `jobs.end_user_id` are canonical in `schema.md` (§1, §2). Recap:
 
-| column        | type        | notes                                       |
-| ------------- | ----------- | ------------------------------------------- |
-| id            | text PK     | `enduser_...`                               |
-| account_id    | text FK     | → accounts                                  |
-| external_id   | text        | customer's identifier, ≤256 chars           |
-| first_seen_at | timestamptz |                                             |
-| last_seen_at  | timestamptz | throttled updates                           |
-| metadata      | jsonb       | customer-supplied, opaque                   |
-|               |             | UNIQUE (account_id, external_id)            |
+| column        | type        | notes                             |
+| ------------- | ----------- | --------------------------------- |
+| id            | text PK     | `enduser_...`                     |
+| account_id    | text FK     | → accounts                        |
+| external_id   | text        | customer's identifier, ≤256 chars |
+| first_seen_at | timestamptz |                                   |
+| last_seen_at  | timestamptz | throttled updates                 |
+| metadata      | jsonb       | customer-supplied, opaque         |
+|               |             | UNIQUE (account_id, external_id)  |
 
 ## 3. The superpowers (all approved 2026-07-05)
 
@@ -61,15 +61,15 @@ We won't be building this in v1, but could in the future.
 
 Future table (not in v1 schema; listed in `schema.md` §7):
 
-| column          | type        | notes                                        |
-| --------------- | ----------- | --------------------------------------------- |
-| id              | text PK     | `eulimit_...`                                 |
-| account_id      | text FK     | → accounts                                    |
-| scope           | text        | `all_end_users \| single` (+ end_user_id FK)  |
-| window          | text        | `hourly \| daily \| weekly \| monthly`        |
-| limit_micros    | bigint      | null = no spend cap                           |
-| max_requests    | int         | null = no rate cap                            |
-| behavior        | text        | `block`                                       |
+| column       | type    | notes                                      |
+| ------------ | ------- | ------------------------------------------ |
+| id           | text PK | `eulimit_...`                              |
+| account_id   | text FK | → accounts                                 |
+| scope        | text    | `all_end_users, single` (+ end_user_id FK) |
+| window       | text    | `hourly, daily, weekly, monthly`           |
+| limit_micros | bigint  | null = no spend cap                        |
+| max_requests | int     | null = no rate cap                         |
+| behavior     | text    | `block`                                    |
 
 Enforced in the admission transaction, same pattern as account spend limits. A request with
 no `end_user` can't hit per-end-user limits (documented; accounts wanting enforcement make

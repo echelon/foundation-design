@@ -14,7 +14,7 @@ Conventions:
 
 - Every `id` is `TEXT PRIMARY KEY`, format `{prefix}_{26-char Crockford ULID}`, time-ordered.
   The prefix is listed with each table. Every table opens with
-  `sequence_id BIGINT GENERATED ALWAYS AS IDENTITY` (never exposed, never joined on,
+  `sid BIGINT GENERATED ALWAYS AS IDENTITY` (never exposed, never joined on,
   `ORDER BY` only), listed explicitly in every table here and in sibling docs, with `id`
   declared right after it. Full spec + decisions: `ids.md`.
 - All timestamps are `timestamptz`. `created_at` defaults to `now()` and always sorts above
@@ -44,7 +44,7 @@ What remains in this section:
 
 | column        | type        | notes                                           |
 | ------------- | ----------- | ----------------------------------------------- |
-| sequence_id   | bigint      | identity; never exposed (ids.md §4)             |
+| sid           | bigint      | identity; never exposed (ids.md §4)             |
 | id            | text PK     | `enduser_...`                                   |
 | account_id    | text FK     | → accounts                                      |
 | external_id   | text        | the customer's own id for this user, ≤256 chars |
@@ -68,8 +68,8 @@ are the universal primitive (every generation — API, dashboard, MCP, LLM — i
 the full design lives there.
 
 **Moved to `files.md` (2026-07-14):** files (the storage primitive — uploads AND generated
-bytes) and outputs (renamed from `job_outputs`) — the two-table storage/provenance split.
-Nothing remains in this section.
+bytes) and outputs — the two-table storage/provenance split. Nothing remains in this
+section.
 
 ---
 
@@ -79,21 +79,21 @@ Nothing remains in this section.
 
 ### queue_tasks  (`task_`)
 
-| column       | type        | notes                                                                                                                     |
-| ------------ | ----------- | ------------------------------------------------------------------------------------------------------------------------- |
-| sequence_id  | bigint      | identity; never exposed (ids.md §4)                                                                                       |
-| id           | text PK     | `task_...`                                                                                                                |
-| task_type    | text        | `dispatch_job \| poll_provider \| ingest_outputs \| deliver_webhook \| settle_refund \| auto_refill \| rollup_usage \| …` |
-| payload      | jsonb       | usually `{ "job_id": ... }`                                                                                               |
-| created_at   | timestamptz |                                                                                                                           |
-| run_after    | timestamptz | scheduling + backoff                                                                                                      |
-| priority     | int         | lower = sooner                                                                                                            |
-| attempts     | int         |                                                                                                                           |
-| max_attempts | int         |                                                                                                                           |
-| locked_by    | text        | worker identity; null                                                                                                     |
-| locked_at    | timestamptz | visibility timeout base; null                                                                                             |
-| status       | text        | `pending \| running \| done \| dead`                                                                                      |
-| last_error   | text        | null                                                                                                                      |
+| column       | type        | notes                                                                                                       |
+| ------------ | ----------- | ----------------------------------------------------------------------------------------------------------- |
+| sid          | bigint      | identity; never exposed (ids.md §4)                                                                         |
+| id           | text PK     | `task_...`                                                                                                  |
+| task_type    | text        | `dispatch_job, poll_provider, ingest_outputs, deliver_webhook, settle_refund, auto_refill, rollup_usage, process_stripe_event, …` |
+| payload      | jsonb       | usually `{ "job_id": ... }`                                                                                 |
+| created_at   | timestamptz |                                                                                                             |
+| run_after    | timestamptz | scheduling + backoff                                                                                        |
+| priority     | int         | lower = sooner                                                                                              |
+| attempts     | int         |                                                                                                             |
+| max_attempts | int         |                                                                                                             |
+| locked_by    | text        | worker identity; null                                                                                       |
+| locked_at    | timestamptz | visibility timeout base; null                                                                               |
+| status       | text        | `pending, running, done, dead`                                                                              |
+| last_error   | text        | null                                                                                                        |
 
 Worker loop: `SELECT ... WHERE status='pending' AND run_after <= now() ORDER BY priority,
 run_after FOR UPDATE SKIP LOCKED LIMIT n`. Lowered fillfactor + aggressive autovacuum.
@@ -123,41 +123,41 @@ moved to **`logging.md`** (2026-07-05), which owns the logs product: truncation
 
 ### webhook_secrets  (`whs_` row id; the secret itself is `foundation_whsec_...`)
 
-| column      | type        | notes                                     |
-| ----------- | ----------- | ----------------------------------------- |
-| sequence_id | bigint      | identity; never exposed (ids.md §4)       |
-| id          | text PK     | `whs_...`                                 |
-| account_id  | text FK     | → accounts                                |
-| secret      | text        | `foundation_whsec_...`, encrypted at rest |
-| created_at  | timestamptz |                                           |
-| revoked_at  | timestamptz | null; rotation = two active at once       |
+| column     | type        | notes                                     |
+| ---------- | ----------- | ----------------------------------------- |
+| sid        | bigint      | identity; never exposed (ids.md §4)       |
+| id         | text PK     | `whs_...`                                 |
+| account_id | text FK     | → accounts                                |
+| secret     | text        | `foundation_whsec_...`, encrypted at rest |
+| created_at | timestamptz |                                           |
+| revoked_at | timestamptz | null; rotation = two active at once       |
 
 ### audit_logs  (`audit_`)
 
-| column           | type        | notes                                                                |
-| ---------------- | ----------- | -------------------------------------------------------------------- |
-| sequence_id      | bigint      | identity; never exposed (ids.md §4)                                  |
-| id               | text PK     | `audit_...`                                                          |
-| account_id       | text FK     | → accounts                                                           |
-| actor_user_id    | text FK     | → users                                                              |
-| action           | text        | `key.created \| key.revoked \| member.invited \| limit.changed \| …` |
-| target_id        | text        | the affected row's id (self-describing prefix!)                      |
-| data             | jsonb       |                                                                      |
-| ip               | inet        |                                                                      |
-| created_at       | timestamptz |                                                                      |
+| column        | type        | notes                                                        |
+| ------------- | ----------- | ------------------------------------------------------------ |
+| sid           | bigint      | identity; never exposed (ids.md §4)                          |
+| id            | text PK     | `audit_...`                                                  |
+| account_id    | text FK     | → accounts                                                   |
+| actor_user_id | text FK     | → users                                                      |
+| action        | text        | `key.created, key.revoked, member.invited, limit.changed, …` |
+| target_id     | text        | the affected row's id (self-describing prefix!)              |
+| data          | jsonb       |                                                              |
+| ip            | inet        |                                                              |
+| created_at    | timestamptz |                                                              |
 
 ### idempotency_keys  (`idem_`)
 
-| column             | type        | notes                               |
-| ------------------ | ----------- | ----------------------------------- |
-| sequence_id        | bigint      | identity; never exposed (ids.md §4) |
-| id                 | text PK     | `idem_...`                          |
-| account_id         | text FK     | → accounts                          |
-| key                | text        | UNIQUE (account_id, key)            |
-| request_hash       | text        | reject reuse with changed body      |
-| response_snapshot  | jsonb       | replayed on repeat                  |
-| created_at         | timestamptz |                                     |
-| expires_at         | timestamptz | 24h window                          |
+| column            | type        | notes                               |
+| ----------------- | ----------- | ----------------------------------- |
+| sid               | bigint      | identity; never exposed (ids.md §4) |
+| id                | text PK     | `idem_...`                          |
+| account_id        | text FK     | → accounts                          |
+| key               | text        | UNIQUE (account_id, key)            |
+| request_hash      | text        | reject reuse with changed body      |
+| response_snapshot | jsonb       | replayed on repeat                  |
+| created_at        | timestamptz |                                     |
+| expires_at        | timestamptz | 24h window                          |
 
 ---
 
@@ -176,35 +176,35 @@ Moved to `payments.md` §6 (with the refund mirror and LLM exception).
 Every table in the system, wherever it's defined — sibling doc or this one. This is THE
 outline; a table missing here doesn't exist.
 
-| Domain            | Table                    | Prefix      | Defined in           |
-| ----------------- | ------------------------ | ----------- | -------------------- |
-| Identity & access | accounts                 | `acct_`     | `accounts.md` §2     |
-|                   | users                    | `user_`     | `accounts.md` §2     |
-|                   | user_sso_connections     | `sso_`      | `accounts.md` §2     |
-|                   | account_members          | `mem_`      | `accounts.md` §2     |
-|                   | invitations              | `inv_`      | `accounts.md` §2     |
-|                   | sessions                 | `sess_`     | `accounts.md` §2     |
-|                   | api_keys                 | `key_`      | `accounts.md` §2     |
-|                   | email_verifications      | `emailver_` | `accounts.md` §2     |
-|                   | password_resets          | `pwreset_`  | `accounts.md` §2     |
-|                   | end_users                | `enduser_`  | **this doc** §1      |
-| Jobs              | jobs                     | `job_`      | `jobs.md` §4         |
-|                   | job_events               | `jevt_`     | `jobs.md` §4         |
-| Files & outputs   | files                    | `file_`     | `files.md` §2        |
-|                   | outputs                  | `out_`      | `files.md` §2        |
-| Queue             | queue_tasks              | `task_`     | **this doc** §3      |
-| Money             | stripe_customers         | `cust_`     | `payments.md` §2     |
-|                   | payment_methods          | `pm_`       | `payments.md` §2     |
-|                   | ledger_entries           | `txn_`      | `payments.md` §2     |
-|                   | account_balances         | —           | `payments.md` §2     |
-|                   | auto_refill_rules        | `refill_`   | `payments.md` §2     |
-|                   | spend_limits             | `limit_`    | `payments.md` §2     |
-|                   | stripe_events            | `sevt_`     | `payments.md` §2     |
-| Logs              | request_logs             | `rlog_`     | `logging.md` §3      |
-|                   | provider_calls           | `pcall_`    | `logging.md` §3      |
-|                   | webhook_deliveries       | `whd_`      | `logging.md` §3      |
-| Security & audit  | webhook_secrets          | `whs_`      | **this doc** §5      |
-|                   | audit_logs               | `audit_`    | **this doc** §5      |
-|                   | idempotency_keys         | `idem_`     | **this doc** §5      |
-| Rollups           | usage_rollups            | `roll_`     | `rankings.md` §2     |
-| Future (reserved) | end_user_limits          | `eulimit_`  | `end-users.md` (not built) |
+| Domain            | Table                | Prefix      | Defined in                 |
+| ----------------- | -------------------- | ----------- | -------------------------- |
+| Identity & access | accounts             | `acct_`     | `accounts.md` §2           |
+|                   | users                | `user_`     | `accounts.md` §2           |
+|                   | user_sso_connections | `sso_`      | `accounts.md` §2           |
+|                   | account_members      | `mem_`      | `accounts.md` §2           |
+|                   | invitations          | `inv_`      | `accounts.md` §2           |
+|                   | sessions             | `sess_`     | `accounts.md` §2           |
+|                   | api_keys             | `key_`      | `accounts.md` §2           |
+|                   | email_verifications  | `emailver_` | `accounts.md` §2           |
+|                   | password_resets      | `pwreset_`  | `accounts.md` §2           |
+|                   | end_users            | `enduser_`  | **this doc** §1            |
+| Jobs              | jobs                 | `job_`      | `jobs.md` §4               |
+|                   | job_events           | `jevt_`     | `jobs.md` §4               |
+| Files & outputs   | files                | `file_`     | `files.md` §2              |
+|                   | outputs              | `out_`      | `files.md` §2              |
+| Queue             | queue_tasks          | `task_`     | **this doc** §3            |
+| Money             | stripe_customers     | `cust_`     | `payments.md` §2           |
+|                   | payment_methods      | `pm_`       | `payments.md` §2           |
+|                   | ledger_entries       | `txn_`      | `payments.md` §2           |
+|                   | account_balances     | —           | `payments.md` §2           |
+|                   | auto_refill_rules    | `refill_`   | `payments.md` §2           |
+|                   | spend_limits         | `limit_`    | `payments.md` §2           |
+|                   | stripe_events        | `sevt_`     | `payments.md` §2           |
+| Logs              | request_logs         | `rlog_`     | `logging.md` §3            |
+|                   | provider_calls       | `pcall_`    | `logging.md` §3            |
+|                   | webhook_deliveries   | `whd_`      | `logging.md` §3            |
+| Security & audit  | webhook_secrets      | `whs_`      | **this doc** §5            |
+|                   | audit_logs           | `audit_`    | **this doc** §5            |
+|                   | idempotency_keys     | `idem_`     | **this doc** §5            |
+| Rollups           | usage_rollups        | `roll_`     | `rankings.md` §2           |
+| Future (reserved) | end_user_limits      | `eulimit_`  | `end-users.md` (not built) |

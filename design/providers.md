@@ -16,17 +16,17 @@ items marked TBV get confirmed during integration.
 
 **Sign-off:** _unsigned_
 
-| Provider    | Crate               | Supplies                          | Billing (theirs)                | API type                              | Webhooks? |
-| ----------- | ------------------- | --------------------------------- | ------------------------------- | -------------------------------------- | --------- |
-| OpenAI      | `clients/openai`    | gpt-image, Sora video, LLMs       | Prepaid credits (self-serve)    | Images sync; video create→poll         | Yes (video events) |
-| Google      | `clients/google`    | Nano Banana, Veo, Gemini LLMs     | Postpaid (Cloud billing)        | Image sync; Veo LRO create→poll        | No        |
-| ByteDance   | `clients/bytedance` | Seedance video, Seedream image    | Prepaid account balance         | Video create→poll; image sync          | No        |
-| Kling       | `clients/kling`     | Kling video, lipsync, avatar      | Prepaid resource packages       | Create→poll                            | Yes (`callback_url`) |
-| BFL         | `clients/bfl`       | FLUX family (all)                 | Prepaid credits (1cr = $0.01)   | Submit→poll returned `polling_url`     | Yes (config TBV) |
-| xAI         | `clients/xai`       | Grok Imagine image+video, LLMs    | Prepaid credits                 | Image sync; video deferred→poll        | No        |
-| Anthropic   | `clients/anthropic` | Claude LLMs                       | Prepaid credits / invoicing     | Held-open POST + SSE                   | n/a       |
-| Vidu        | `clients/vidu`      | Vidu Q video                      | Prepaid credits                 | Create→poll                            | Yes (`callback_url`) |
-| World Labs  | `clients/worldlabs` | Marble worlds/splats              | Prepaid credits (never expire)  | LRO create→poll (polling free)         | No (TBV)  |
+| Provider   | Crate               | Supplies                       | Billing (theirs)               | API type                           | Webhooks?            |
+| ---------- | ------------------- | ------------------------------ | ------------------------------ | ---------------------------------- | -------------------- |
+| OpenAI     | `clients/openai`    | gpt-image, Sora video, LLMs    | Prepaid credits (self-serve)   | Images sync; video create→poll     | Yes (video events)   |
+| Google     | `clients/google`    | Nano Banana, Veo, Gemini LLMs  | Postpaid (Cloud billing)       | Image sync; Veo LRO create→poll    | No                   |
+| ByteDance  | `clients/bytedance` | Seedance video, Seedream image | Prepaid account balance        | Video create→poll; image sync      | No                   |
+| Kling      | `clients/kling`     | Kling video, lipsync, avatar   | Prepaid resource packages      | Create→poll                        | Yes (`callback_url`) |
+| BFL        | `clients/bfl`       | FLUX family (all)              | Prepaid credits (1cr = $0.01)  | Submit→poll returned `polling_url` | Yes (config TBV)     |
+| xAI        | `clients/xai`       | Grok Imagine image+video, LLMs | Prepaid credits                | Image sync; video deferred→poll    | No                   |
+| Anthropic  | `clients/anthropic` | Claude LLMs                    | Prepaid credits / invoicing    | Held-open POST + SSE               | n/a                  |
+| Vidu       | `clients/vidu`      | Vidu Q video                   | Prepaid credits                | Create→poll                        | Yes (`callback_url`) |
+| World Labs | `clients/worldlabs` | Marble worlds/splats           | Prepaid credits (never expire) | LRO create→poll (polling free)     | No (TBV)             |
 
 Preference note: we favor poll- or webhook-based partners; the sync-only providers here
 (gpt-image, Nano Banana, Seedream, Grok image) are fine because *fast image* sync fits
@@ -150,17 +150,17 @@ optimization — we always also poll.
 
 **Sign-off:** _unsigned_
 
-| Provider    | Models covered (models.md slugs)                                                  |
-| ----------- | ---------------------------------------------------------------------------------- |
-| OpenAI      | `openai_gpt_image_v1`, `_v1_mini`, `_v1_5`, `_v2`, `openai_sora_v2`, `_pro`, `openai_gpt_v5_5*`, `openai_gpt_v5_4*`, `openai_gpt_v5_3_codex`, `openai_o4_mini`, `openai_gpt_4o_mini_tts`, `openai_gpt_4o_transcribe`, `openai_whisper_large_v3` |
-| Google      | `google_nano_banana`, `_v2`, `_v2_lite`, `_pro`, `google_imagen_v4` (†dies 08-17), `google_veo_v2/v3/v3_fast/v3_1/v3_1_fast/v3_1_lite`, `google_gemini_omni_flash`, `google_gemini_*` LLMs, `google_gemma_v4_31b`, `google_lyria_v3*`, `google_gemini_v3_1_flash_tts`, `google_chirp_v3` |
-| ByteDance   | `bytedance_seedance_v1_lite/v1_pro/v1_5_pro/v2/v2_fast/v2_mini`, `bytedance_seedream_v3/v4/v4_5/v5_lite`, `bytedance_dreamina_v3_1` (TBV on intl) |
-| Kling       | `kling_video_*` (all 13), `kling_lipsync`, `kling_avatar_v2_pro`                    |
-| BFL         | `bfl_flux_v1_schnell/dev/krea_dev`, `bfl_flux_pro_v1_1/_ultra`, `bfl_flux_v2_dev/pro/flex/max/klein_9b/klein_4b`, `bfl_flux_kontext_dev/pro/max`, `bfl_flux_fill_pro` |
-| xAI         | `xai_grok_imagine_image`, `_quality`, `xai_grok_imagine_video`, `_v1_5`, `xai_grok_v4_3/v4_20/build_v0_1`, `xai_grok_voice_tts_v1` |
-| Anthropic   | `anthropic_claude_opus_v4_8`, `_sonnet_v5`, `_sonnet_v4_6`, `_haiku_v4_5`, `_fable_v5` |
-| Vidu        | `vidu_v2`, `vidu_q1`, `vidu_q2`, `vidu_q3`, `vidu_q3_turbo`                          |
-| World Labs  | `worldlabs_marble_v1_1`, `worldlabs_marble_v1_1_plus`                                |
+| Provider   | Models covered (models.md slugs)                                                                                                                                                                                                                                                         |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| OpenAI     | `openai_gpt_image_v1`, `_v1_mini`, `_v1_5`, `_v2`, `openai_sora_v2`, `_pro`, `openai_gpt_v5_5*`, `openai_gpt_v5_4*`, `openai_gpt_v5_3_codex`, `openai_o4_mini`, `openai_gpt_4o_mini_tts`, `openai_gpt_4o_transcribe`, `openai_whisper_large_v3`                                          |
+| Google     | `google_nano_banana`, `_v2`, `_v2_lite`, `_pro`, `google_imagen_v4` (†dies 08-17), `google_veo_v2/v3/v3_fast/v3_1/v3_1_fast/v3_1_lite`, `google_gemini_omni_flash`, `google_gemini_*` LLMs, `google_gemma_v4_31b`, `google_lyria_v3*`, `google_gemini_v3_1_flash_tts`, `google_chirp_v3` |
+| ByteDance  | `bytedance_seedance_v1_lite/v1_pro/v1_5_pro/v2/v2_fast/v2_mini`, `bytedance_seedream_v3/v4/v4_5/v5_lite`, `bytedance_dreamina_v3_1` (TBV on intl)                                                                                                                                        |
+| Kling      | `kling_video_*` (all 13), `kling_lipsync`, `kling_avatar_v2_pro`                                                                                                                                                                                                                         |
+| BFL        | `bfl_flux_v1_schnell/dev/krea_dev`, `bfl_flux_pro_v1_1/_ultra`, `bfl_flux_v2_dev/pro/flex/max/klein_9b/klein_4b`, `bfl_flux_kontext_dev/pro/max`, `bfl_flux_fill_pro`                                                                                                                    |
+| xAI        | `xai_grok_imagine_image`, `_quality`, `xai_grok_imagine_video`, `_v1_5`, `xai_grok_v4_3/v4_20/build_v0_1`, `xai_grok_voice_tts_v1`                                                                                                                                                       |
+| Anthropic  | `anthropic_claude_opus_v4_8`, `_sonnet_v5`, `_sonnet_v4_6`, `_haiku_v4_5`, `_fable_v5`                                                                                                                                                                                                   |
+| Vidu       | `vidu_v2`, `vidu_q1`, `vidu_q2`, `vidu_q3`, `vidu_q3_turbo`                                                                                                                                                                                                                              |
+| World Labs | `worldlabs_marble_v1_1`, `worldlabs_marble_v1_1_plus`                                                                                                                                                                                                                                    |
 
 ## 4. Models with NO committed provider
 

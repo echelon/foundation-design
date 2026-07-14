@@ -37,98 +37,98 @@ product copy (ledger entry types like `promo` are internal terms).
 
 ### stripe_customers  (`cust_`)
 
-| column              | type        | notes                               |
-| ------------------- | ----------- | ----------------------------------- |
-| sequence_id         | bigint      | identity; never exposed (ids.md §4) |
-| id                  | text PK     | `cust_...`                          |
-| account_id          | text FK     | UNIQUE → accounts                   |
-| stripe_customer_id  | text UNIQUE | `cus_...` at Stripe                 |
-| created_at          | timestamptz |                                     |
+| column             | type        | notes                               |
+| ------------------ | ----------- | ----------------------------------- |
+| sid                | bigint      | identity; never exposed (ids.md §4) |
+| id                 | text PK     | `cust_...`                          |
+| account_id         | text FK     | UNIQUE → accounts                   |
+| stripe_customer_id | text UNIQUE | `cus_...` at Stripe                 |
+| created_at         | timestamptz |                                     |
 
 ### payment_methods  (`pm_`)
 
-| column                    | type        | notes                               |
-| ------------------------- | ----------- | ----------------------------------- |
-| sequence_id               | bigint      | identity; never exposed (ids.md §4) |
-| id                        | text PK     | `pm_...` (ours)                     |
-| account_id                | text FK     | → accounts                          |
-| stripe_payment_method_id  | text        | theirs                              |
-| brand                     | text        | `visa`, …                           |
-| last4                     | text        |                                     |
-| exp_month                 | int         |                                     |
-| exp_year                  | int         |                                     |
-| is_default                | bool        |                                     |
-| status                    | text        | `active \| detached`                |
-| created_at                | timestamptz |                                     |
+| column                   | type        | notes                               |
+| ------------------------ | ----------- | ----------------------------------- |
+| sid                      | bigint      | identity; never exposed (ids.md §4) |
+| id                       | text PK     | `pm_...` (ours)                     |
+| account_id               | text FK     | → accounts                          |
+| stripe_payment_method_id | text        | theirs                              |
+| brand                    | text        | `visa`, …                           |
+| last4                    | text        |                                     |
+| exp_month                | int         |                                     |
+| exp_year                 | int         |                                     |
+| is_default               | bool        |                                     |
+| status                   | text        | `active, detached`                  |
+| created_at               | timestamptz |                                     |
 
 ### ledger_entries  (`txn_`) — APPEND-ONLY
 
-| column                    | type        | notes                                                                                                          |
-| ------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------- |
-| sequence_id               | bigint      | identity; never exposed (ids.md §4)                                                                            |
-| id                        | text PK     | `txn_...`                                                                                                      |
-| account_id                | text FK     | → accounts                                                                                                     |
-| amount_micros             | bigint      | signed: + credit, − debit                                                                                      |
-| entry_type                | text        | `topup \| job_charge \| job_refund \| adjustment \| promo \| auto_refill \| chargeback \| chargeback_reversal` |
-| job_id                    | text FK     | → jobs; null for non-job entries                                                                               |
-| stripe_payment_intent_id  | text        | null; topups/auto-refills/chargebacks                                                                          |
-| balance_after_micros      | bigint      | written under the balance row lock                                                                             |
-| memo                      | text        | null                                                                                                           |
-| idempotency_key           | text        | UNIQUE, null (e.g. `topup:{checkout_session_id}`)                                                              |
-| created_at                | timestamptz |                                                                                                                |
+| column                   | type        | notes                                                                                            |
+| ------------------------ | ----------- | ------------------------------------------------------------------------------------------------ |
+| sid                      | bigint      | identity; never exposed (ids.md §4)                                                              |
+| id                       | text PK     | `txn_...`                                                                                        |
+| account_id               | text FK     | → accounts                                                                                       |
+| amount_micros            | bigint      | signed: + credit, − debit                                                                        |
+| entry_type               | text        | `topup, job_charge, job_refund, adjustment, promo, auto_refill, chargeback, chargeback_reversal` |
+| job_id                   | text FK     | → jobs; null for non-job entries                                                                 |
+| stripe_payment_intent_id | text        | null; topups/auto-refills/chargebacks                                                            |
+| balance_after_micros     | bigint      | written under the balance row lock                                                               |
+| memo                     | text        | null                                                                                             |
+| idempotency_key          | text        | UNIQUE, null (e.g. `topup:{checkout_session_id}`)                                                |
+| created_at               | timestamptz |                                                                                                  |
 
 ### account_balances
 
-| column          | type        | notes                                                        |
-| --------------- | ----------- | ------------------------------------------------------------ |
-| sequence_id     | bigint      | identity; never exposed (ids.md §4)                          |
-| account_id      | text PK/FK  | → accounts                                                   |
-| balance_micros  | bigint      | cache; mutated only with a ledger insert, under `FOR UPDATE` |
-| updated_at      | timestamptz |                                                              |
+| column         | type        | notes                                                        |
+| -------------- | ----------- | ------------------------------------------------------------ |
+| sid            | bigint      | identity; never exposed (ids.md §4)                          |
+| account_id     | text PK/FK  | → accounts                                                   |
+| balance_micros | bigint      | cache; mutated only with a ledger insert, under `FOR UPDATE` |
+| updated_at     | timestamptz |                                                              |
 
 ### auto_refill_rules  (`refill_`)
 
-| column               | type        | notes                                        |
-| -------------------- | ----------- | -------------------------------------------- |
-| sequence_id          | bigint      | identity; never exposed (ids.md §4)          |
-| id                   | text PK     | `refill_...`                                 |
-| account_id           | text FK     | UNIQUE → accounts (one rule)                 |
-| enabled              | bool        |                                              |
-| threshold_micros     | bigint      | trigger when balance drops below             |
-| refill_amount_micros | bigint      | amount to charge                             |
-| payment_method_id    | text FK     | → payment_methods                            |
-| daily_max_micros     | bigint      | runaway-card safety                          |
-| consecutive_failures | int         | rule auto-disables at 3 (see §6)             |
-| created_at           | timestamptz |                                              |
-| last_triggered_at    | timestamptz | null                                         |
-| updated_at           | timestamptz |                                              |
+| column               | type        | notes                               |
+| -------------------- | ----------- | ----------------------------------- |
+| sid                  | bigint      | identity; never exposed (ids.md §4) |
+| id                   | text PK     | `refill_...`                        |
+| account_id           | text FK     | UNIQUE → accounts (one rule)        |
+| enabled              | bool        |                                     |
+| threshold_micros     | bigint      | trigger when balance drops below    |
+| refill_amount_micros | bigint      | amount to charge                    |
+| payment_method_id    | text FK     | → payment_methods                   |
+| daily_max_micros     | bigint      | runaway-card safety                 |
+| consecutive_failures | int         | rule auto-disables at 3 (see §6)    |
+| created_at           | timestamptz |                                     |
+| last_triggered_at    | timestamptz | null                                |
+| updated_at           | timestamptz |                                     |
 
 ### spend_limits  (`limit_`)
 
-| column             | type        | notes                                |
-| ------------------ | ----------- | ------------------------------------ |
-| sequence_id        | bigint      | identity; never exposed (ids.md §4)  |
-| id                 | text PK     | `limit_...`                          |
-| account_id         | text FK     | → accounts                           |
-| window             | text        | `weekly \| monthly`                  |
-| limit_micros       | bigint      |                                      |
-| behavior           | text        | `block`                              |
-| created_by_user_id | text FK     | → users                              |
-| created_at         | timestamptz |                                      |
-| updated_at         | timestamptz |                                      |
+| column             | type        | notes                               |
+| ------------------ | ----------- | ----------------------------------- |
+| sid                | bigint      | identity; never exposed (ids.md §4) |
+| id                 | text PK     | `limit_...`                         |
+| account_id         | text FK     | → accounts                          |
+| window             | text        | `weekly, monthly`                   |
+| limit_micros       | bigint      |                                     |
+| behavior           | text        | `block`                             |
+| created_by_user_id | text FK     | → users                             |
+| created_at         | timestamptz |                                     |
+| updated_at         | timestamptz |                                     |
 
 ### stripe_events  (`sevt_`)
 
-| column           | type        | notes                               |
-| ---------------- | ----------- | ----------------------------------- |
-| sequence_id      | bigint      | identity; never exposed (ids.md §4) |
-| id               | text PK     | `sevt_...`                          |
-| stripe_event_id  | text UNIQUE | dedupe                              |
-| event_type       | text        |                                     |
-| payload          | jsonb       |                                     |
-| created_at       | timestamptz |                                     |
-| processed_at     | timestamptz | null until handled                  |
-| error            | text        | null                                |
+| column          | type        | notes                               |
+| --------------- | ----------- | ----------------------------------- |
+| sid             | bigint      | identity; never exposed (ids.md §4) |
+| id              | text PK     | `sevt_...`                          |
+| stripe_event_id | text UNIQUE | dedupe                              |
+| event_type      | text        |                                     |
+| payload         | jsonb       |                                     |
+| created_at      | timestamptz |                                     |
+| processed_at    | timestamptz | null until handled                  |
+| error           | text        | null                                |
 
 ## 3. Funding the balance: Stripe Checkout sessions
 
@@ -183,17 +183,17 @@ Pipeline:
    the processing is retryable/idempotent (every money mutation goes through ledger
    idempotency keys).
 
-| Event                                  | Handling                                                  |
-| -------------------------------------- | ---------------------------------------------------------- |
-| `checkout.session.completed`           | mode=payment → ledger `topup` (idempotent by session id); save PM if setup_future_usage; mode=setup → register payment_method |
-| `payment_intent.succeeded`             | auto-refill confirmations → ledger `auto_refill`            |
-| `payment_intent.payment_failed`        | auto-refill failure bookkeeping (§4), notify                |
-| `setup_intent.succeeded`               | payment_methods upsert                                      |
-| `payment_method.detached` / `customer.updated` | mirror card list / default changes                   |
-| `charge.refunded`                      | (we initiated) ledger `adjustment` with memo; support tooling |
-| `charge.dispute.created`               | ledger `chargeback` (debit), **account → suspended** pending review — disputes on a prepaid API business are a fraud signal, not a customer-service signal |
-| `charge.dispute.closed` (won)          | ledger `chargeback_reversal`, un-suspend                    |
-| `radar.early_fraud_warning.created`    | alert ops; optional preemptive suspend                      |
+| Event                                          | Handling                                                                                                                                                   |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `checkout.session.completed`                   | mode=payment → ledger `topup` (idempotent by session id); save PM if setup_future_usage; mode=setup → register payment_method                              |
+| `payment_intent.succeeded`                     | auto-refill confirmations → ledger `auto_refill`                                                                                                           |
+| `payment_intent.payment_failed`                | auto-refill failure bookkeeping (§4), notify                                                                                                               |
+| `setup_intent.succeeded`                       | payment_methods upsert                                                                                                                                     |
+| `payment_method.detached` / `customer.updated` | mirror card list / default changes                                                                                                                         |
+| `charge.refunded`                              | (we initiated) ledger `adjustment` with memo; support tooling                                                                                              |
+| `charge.dispute.created`                       | ledger `chargeback` (debit), **account → suspended** pending review — disputes on a prepaid API business are a fraud signal, not a customer-service signal |
+| `charge.dispute.closed` (won)                  | ledger `chargeback_reversal`, un-suspend                                                                                                                   |
+| `radar.early_fraud_warning.created`            | alert ops; optional preemptive suspend                                                                                                                     |
 
 Unhandled event types are stored (audit) and marked processed. A daily reconciliation task
 cross-checks Stripe balance transactions vs our `topup`/`auto_refill` ledger entries.

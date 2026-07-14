@@ -1,6 +1,7 @@
 # Identifiers
 
-**Sign-off:** _unsigned_
+**Sign-off:** bt 2026-07-14
+
 <!-- bt: initials + date when approved (e.g. "bt 2026-07-05"). Per-section sign-offs below;
      the top one covers the whole document. Assistants: see ../CLAUDE.md. -->
 
@@ -16,7 +17,7 @@ here. Siblings: `architecture.md`, `schema.md`, `naming_conventions.md`. Backgro
 
 Every row's public identifier is a **prefixed ULID string**: `{prefix}_{26-char Crockford
 base32}`, e.g. `job_01j0qs3fw9x7k2m5n8p1r4t7v0`. This string lives in the `id` column and is
-the **primary key** (see §4 for the companion `sequence_id`). Used everywhere: FKs, joins,
+the **primary key** (see §4 for the companion `sid`). Used everywhere: FKs, joins,
 logs, API responses. A bare ID in a log line tells you what it is — that's the point.
 
 The payload is a standard **ULID — exactly 128 bits**: a 48-bit unix-millisecond timestamp
@@ -24,12 +25,12 @@ followed by **80 bits of randomness**, canonically encoded as **exactly 26 Crock
 characters** (26 × 5 = 130 bits of capacity for 128 bits, so the first character can only be
 `0–7`). The leading section (`01j0qs3fw9`) is the timestamp: sortable, index-friendly.
 
-| Property                | Answer                                                          |
-| ----------------------- | ---------------------------------------------------------------- |
-| Payload length          | Always exactly 26 chars (canonical ULID text)                    |
-| Total length            | `len(prefix) + 1 + 26` — constant per type: `job_` → 31, `acct_` → 32, `enduser_` → 35 |
-| Globally constant?      | Only if we padded prefixes to equal width — don't; per-type constancy is what validation and column sizing care about, and `text` doesn't care at all |
-| Charset                 | Crockford base32: `0-9 a-hjkmnp-tv-z` — no `i l o u`, case-insensitive by spec (we emit lowercase only), no vowel-slang accidents beyond that |
+| Property           | Answer                                                                                                                                                |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Payload length     | Always exactly 26 chars (canonical ULID text)                                                                                                         |
+| Total length       | `len(prefix) + 1 + 26` — constant per type: `job_` → 31, `acct_` → 32, `enduser_` → 35                                                                |
+| Globally constant? | Only if we padded prefixes to equal width — don't; per-type constancy is what validation and column sizing care about, and `text` doesn't care at all |
+| Charset            | Crockford base32: `0-9 a-hjkmnp-tv-z` — no `i l o u`, case-insensitive by spec (we emit lowercase only), no vowel-slang accidents beyond that         |
 
 Validation regex per type is therefore trivial and total:
 `^job_[0-7][0-9a-hjkmnp-tv-z]{25}$`.
@@ -65,7 +66,7 @@ What it costs:
   Acceptable for every entity we have; if some future resource must hide its age, that one
   type can use a random payload — a per-prefix choice, not an architecture change.
 - Timestamp is **writer clock time**, subject to skew across hosts. It's for ordering,
-  locality, and debugging — `created_at` and `sequence_id` (§4) remain the DB-authoritative
+  locality, and debugging — `created_at` and `sid` (§4) remain the DB-authoritative
   truth.
 
 What it buys, especially at distributed scale:
@@ -73,7 +74,7 @@ What it buys, especially at distributed scale:
 - **The ID is self-ordering and self-dating with zero coordination.** In a microservices
   world where downstream systems see *only* the ID — a log line, a queue message, a webhook
   payload, a cache key, an analytics event — they can sort chronologically and recover
-  creation time to the millisecond **without** `created_at`, without `sequence_id`, without a
+  creation time to the millisecond **without** `created_at`, without `sid`, without a
   DB round trip, and without any shared sequence service. Independent processes on separate
   hosts mint IDs that interleave correctly to clock precision.
 - **B-tree locality.** Time-ordered high bits keep PK inserts append-mostly (right-leaning),
@@ -84,16 +85,16 @@ What it buys, especially at distributed scale:
 
 Skip the ULID spec's optional **monotonic mode** (incrementing the random part within one
 millisecond): it adds shared-state contention inside one process and guarantees nothing
-across processes. Our ordering story — millisecond precision from the clock, `sequence_id`
+across processes. Our ordering story — millisecond precision from the clock, `sid`
 where strict arrival order matters — already covers it.
 
-## 4. `sequence_id` — every table (REVISED 2026-07-14)
+## 4. `sid` — every table (REVISED 2026-07-14)
 
-**Sign-off:** _unsigned_
+**Sign-off:** bt 2026-07-14
 
-Every table gets an auto-increment column: **`sequence_id bigint generated always as
-identity`**, declared first, with the prefixed string `id` (the primary key) declared
-immediately after it.
+Every table gets an auto-increment column: **`sid bigint generated always as identity`**
+(named `sid` — bt 2026-07-14, less to type), declared first, with the prefixed string `id`
+(the primary key) declared immediately after it.
 
 - **Never exposed** in any API response, log line, or webhook. **Never joined on.** FKs
   reference `id` only.
@@ -106,7 +107,7 @@ immediately after it.
 - Not gapless (rollbacks burn values) — anything needing gapless business numbering (invoice
   numbers) is its own counter table.
 - **Design docs list it explicitly (bt 2026-07-14):** every table listing in `schema.md` and
-  its siblings opens with the `sequence_id` row, `id` directly beneath — no implicit columns.
+  its siblings opens with the `sid` row, `id` directly beneath — no implicit columns.
 
 ## 5. Prefix registry
 
