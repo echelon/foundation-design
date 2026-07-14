@@ -5,8 +5,8 @@
      the top one covers the whole document. Assistants: see ../CLAUDE.md. -->
 
 **Status:** living document. Split out of `../2026-07/2026-07-04-initial-build.md` on 2026-07-04.
-Siblings: `api.md`, `schema.md`, `models.md`, `enums.md`, `agents.md`, `logging.md`, `mcp.md`,
-`end-users.md`, `rankings.md`.
+Siblings: `api.md`, `schema.md`, `ids.md`, `models.md`, `enums.md`, `agents.md`, `logging.md`,
+`mcp.md`, `end-users.md`, `rankings.md`, `naming_conventions.md`, `coding_conventions.md`.
 
 ---
 
@@ -56,39 +56,38 @@ catalog IS the product. This replaces the earlier draft's `providers` / `models`
 - Escape hatch (future, only if needed): a tiny runtime kill-switch (env/flag service) to
   disable a model without a deploy. Not in v1.
 
-## 3. Identifiers (REVISED 2026-07-04)
+## 3. Identifiers — moved to `ids.md` (REVISED 2026-07-14)
 
 **Sign-off:** _unsigned_
 
-One ID per row: **the prefixed string is the primary key**. No internal numeric IDs.
-(Full integer-PK analysis: `../reports/identifiers.md`.)
-
-- Format: `{prefix}_{26-char Crockford base32 of 128 bits}`, e.g. `job_01j0qs3fw9x7k2m5n8p1r4t7v0`.
-- Layout is ULID-style: 48-bit millisecond timestamp + 80 random bits. Time-ordered high bits
-  keep B-tree inserts local (right-leaning appends, not random splits), and make
-  `ORDER BY id` chronological.
-- Used everywhere: PKs, FKs, joins, logs, API responses. A bare ID in a log tells you what it
-  is — that's the point.
-- Cost accepted: TEXT keys make PK/FK indexes roughly 3–4× larger than bigint and joins
-  slightly slower. At our scale this is noise; debuggability wins.
-- Collision math (128-bit, 80 random bits per millisecond): across n randomly generated IDs,
-  collision probability ≈ n²/2¹²⁹. 10⁹ IDs (hundreds of millions) → ~10⁻²¹. 10¹² (trillions)
-  → ~10⁻¹⁵. Within a single millisecond, 10,000 IDs collide with p ≈ 4×10⁻¹⁷. And every PK has
-  a unique constraint — a collision is a retried insert, not corruption. 128 bits is enough for
-  trillions.
-- Prefix registry lives in `crates/core/ids` as one enum with a compile-time uniqueness test.
-  Current prefixes: see `schema.md` (one per table) plus secrets: `foundation_api_` (API keys)
-  and `foundation_whsec_` (webhook signing secrets) — service-declaring by design; the
-  `foundation` half swaps when the product is named.
+The identifier design lives in **`ids.md`**. Summary: the prefixed ULID string
+(`{prefix}_{26-char Crockford}`, e.g. `job_01j0qs3fw9x7k2m5n8p1r4t7v0`) occupies the `id`
+column and is the **primary key** — used for all FKs, joins, logs, and API responses. Every
+table additionally carries a non-exposed **`sequence_id bigint generated always as identity`**
+(declared first, `id` right after): never exposed, never joined on, usable in `ORDER BY`.
+Format spec, entropy math, the keep-the-millisecond-clock decision, and the prefix registry:
+`ids.md`. (Integer-PK analysis: `../reports/identifiers.md`.)
 
 ## 4. Billing policy (DECIDED 2026-07-04)
 
 **Sign-off:** _unsigned_
 
-- **Payment at point of enqueue. The price of a job never changes after submission.**
+- **Payment at point of enqueue is the default (REVISED 2026-07-14).** The overwhelming
+  majority of jobs (~90%+) are priced in full at submission and that price never changes.
+  But the design must leave room for **metered models** that can only be priced after the
+  fact (LLM token actuals today; possible future metered media). Each (model, modality)
+  price definition in the catalog declares its billing mode:
+  - `fixed` — full price charged in the admission transaction; never changes after
+    submission. The default and the rule for media jobs.
+  - `metered` — admission checks the balance against a **conservative worst-case estimate**
+    (e.g. `max_tokens × rate`); actuals are charged at completion. If the worst-case bill
+    exceeds the balance, the enqueue is blocked with a `402` — a job may never run if it
+    could produce a bill the customer can't pay.
 - Admission: in one transaction — `SELECT ... FOR UPDATE` the balance row; if
-  `balance_micros < cost` → `402 Payment Required` (machine-readable body with balance, cost,
-  top-up link); else insert ledger debit, update balance, insert job + queue task, commit.
+  `balance_micros < cost` (fixed) or `balance_micros < worst_case_estimate` (metered) →
+  `402 Payment Required` (machine-readable body with balance, cost, top-up link); else insert
+  ledger debit (fixed; metered debits at completion), update balance, insert job + queue
+  task, commit.
 - Job failure → ledger refund entry (full amount). No holds table, no reserved balance, no
   partial capture — deleted from the earlier draft.
 - No negative balances, no grace. (Reversible policy later; not now.)
@@ -200,10 +199,10 @@ schemas — well-trodden adapter territory). Plan:
 - Synchronous pass-through with SSE piping — **bypasses the job queue** (no polling, no
   webhooks), but writes a `jobs` row (media_type `text`, terminal status immediately) so spend
   history, logs, and billing are uniform across media and LLMs.
-- Billing nuance: token counts are known only after completion, so LLM calls are the one
-  exception to fixed-cost-at-enqueue — we admission-check against balance with a conservative
+- Billing nuance: token counts are known only after completion, so LLM calls use the
+  **metered** billing mode (§4) — admission-check against balance with a conservative
   estimate (max_tokens × rate), then charge actuals at completion. Media jobs keep the strict
-  price-fixed-at-enqueue rule.
+  fixed mode.
 - Punt: batch APIs, realtime/websocket voice, embeddings (paths reserved, nothing built).
 
 ## 8. Retention (DECIDED 2026-07-04)

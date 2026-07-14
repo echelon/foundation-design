@@ -12,9 +12,11 @@ here **only** as a pointer (§7) — never duplicated.
 
 Conventions:
 
-- Every `id` is `TEXT PRIMARY KEY`, format `{prefix}_{26-char Crockford of 128 bits}`,
-  ULID-style time-ordered. The prefix is listed with each table. No numeric IDs anywhere
-  (analysis: `../reports/identifiers.md`).
+- Every `id` is `TEXT PRIMARY KEY`, format `{prefix}_{26-char Crockford ULID}`, time-ordered.
+  The prefix is listed with each table. Every table ALSO carries a leading
+  `sequence_id BIGINT GENERATED ALWAYS AS IDENTITY` (never exposed, never joined on,
+  `ORDER BY` only) — **implicit in every table listing here and in sibling docs**, added
+  mechanically; `id` is declared right after it. Full spec + decisions: `ids.md`.
 - All timestamps are `timestamptz`. `created_at` defaults to `now()`. Money is `BIGINT`
   micro-USD unless noted (`_nanos` = nano-USD unit rates).
 - **No catalog tables.** Models, modalities, schemas, routes, prices live in Rust
@@ -114,8 +116,9 @@ run_after FOR UPDATE SKIP LOCKED LIMIT n`. Lowered fillfactor + aggressive autov
 **Moved to `payments.md` (2026-07-05):** stripe_customers, payment_methods, ledger_entries,
 account_balances, auto_refill_rules, spend_limits, stripe_events — plus the money model
 (prepaid dollar balance, no "credits"), Stripe Checkout flows, webhook handling, and
-auto-refill mechanics. Policy recap only: charge at enqueue, price fixed for the job's
-lifetime, hard 402, no negative balances.
+auto-refill mechanics. Policy recap only: charge at enqueue by default (metered models
+admission-check a worst-case estimate, charge actuals at completion — architecture.md §4),
+hard 402, no negative balances.
 
 ---
 

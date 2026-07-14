@@ -19,8 +19,9 @@ product copy (ledger entry types like `promo` are internal terms).
 
 **Sign-off:** _unsigned_
 
-- One **prepaid balance** per account (`i64` micro-USD). Jobs charge it at enqueue; failures
-  refund it. Hard `402` when balance < cost. No negative balances (architecture.md §4).
+- One **prepaid balance** per account (`i64` micro-USD). Jobs charge it at enqueue (metered
+  jobs: worst-case check at enqueue, actuals at completion — architecture.md §4); failures
+  refund it. Hard `402` when balance < cost. No negative balances.
 - The **ledger is the source of truth** (append-only); the balance is a cache updated in the
   same transaction under `FOR UPDATE`; a reconciliation task asserts
   `balance == SUM(ledger)` per account.
@@ -210,8 +211,9 @@ COMMIT;
 
 Refunds (job failed/expired/canceled-before-dispatch) mirror it with
 `entry_type = 'job_refund'`, `idempotency_key = 'refund:{job_id}'`, and `jobs.refunded_micros`
-set. LLM jobs: admission-check with the `max_tokens` estimate, single `job_charge` written at
-completion with actuals (the one exception; architecture.md §7).
+set. LLM jobs use the **metered** billing mode (architecture.md §4): admission-check with the
+`max_tokens` worst-case estimate — blocked with `402` if the worst case exceeds the balance —
+and a single `job_charge` written at completion with actuals.
 
 ## 7. Console & API surface (already in api.md §8 — recap)
 

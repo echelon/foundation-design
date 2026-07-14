@@ -49,6 +49,9 @@ Rules for assistants:
 
 ## Schema naming conventions
 
+Full registries: `design/naming_conventions.md` (names) and `design/coding_conventions.md`
+(style/structure). The rule below predates them and still applies:
+
 - **Foreign-key columns include the referenced table's name** (singular): `invited_by_user_id`,
   `accepted_by_user_id`, `created_by_user_id` — never bare role names like `invited_by` or
   `created_by`. Columns already of the form `{table}_id` (`account_id`, `user_id`, `job_id`,

@@ -148,7 +148,7 @@ What we DO retry, invisibly, under a stable status:
 | price_unit           | text        | snapshot: `per_video_second`, `per_image`, `per_token_in/out`, … (catalog-owned set) |
 | unit_amount_nanos    | bigint      | snapshot: nano-USD rate charged                               |
 | quantity             | numeric     | snapshot: units billed (e.g. seconds)                         |
-| charged_micros       | bigint      | fixed at enqueue; **never changes** (LLM jobs: set at completion) |
+| charged_micros       | bigint      | fixed mode: set at enqueue, never changes. metered mode (LLM): set at completion (architecture.md §4) |
 | refunded_micros      | bigint      | 0 unless failed/canceled/expired → refunded                   |
 | webhook_url          | text        | null                                                          |
 | webhook_events       | text[]      |                                                               |
