@@ -94,8 +94,8 @@ product copy (ledger entry types like `promo` are internal terms).
 | payment_method_id    | text FK     | → payment_methods                            |
 | daily_max_micros     | bigint      | runaway-card safety                          |
 | consecutive_failures | int         | rule auto-disables at 3 (see §6)             |
-| last_triggered_at    | timestamptz | null                                         |
 | created_at           | timestamptz |                                              |
+| last_triggered_at    | timestamptz | null                                         |
 | updated_at           | timestamptz |                                              |
 
 ### spend_limits  (`limit_`)
@@ -119,9 +119,9 @@ product copy (ledger entry types like `promo` are internal terms).
 | stripe_event_id  | text UNIQUE | dedupe                       |
 | event_type       | text        |                              |
 | payload          | jsonb       |                              |
+| created_at       | timestamptz |                              |
 | processed_at     | timestamptz | null until handled           |
 | error            | text        | null                         |
-| created_at       | timestamptz |                              |
 
 ## 3. Funding the balance: Stripe Checkout sessions
 

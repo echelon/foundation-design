@@ -17,7 +17,8 @@ Conventions:
   `sequence_id BIGINT GENERATED ALWAYS AS IDENTITY` (never exposed, never joined on,
   `ORDER BY` only) — **implicit in every table listing here and in sibling docs**, added
   mechanically; `id` is declared right after it. Full spec + decisions: `ids.md`.
-- All timestamps are `timestamptz`. `created_at` defaults to `now()`. Money is `BIGINT`
+- All timestamps are `timestamptz`. `created_at` defaults to `now()` and always sorts above
+  the other timestamp columns in a declaration. Money is `BIGINT`
   micro-USD unless noted (`_nanos` = nano-USD unit rates).
 - **No catalog tables.** Models, modalities, schemas, routes, prices live in Rust
   (`crates/core/catalog`). Jobs snapshot pricing at enqueue. Provider credentials are
@@ -34,7 +35,7 @@ Conventions:
 
 **Sign-off:** _unsigned_
 
-**Moved to `accounts.md` (2026-07-05):** accounts, users, **user_identities** (new — SSO:
+**Moved to `accounts.md` (2026-07-05):** accounts, users, **user_sso_connections** (new — SSO:
 Google + GitHub), account_members, invitations (now code + magic link), sessions, api_keys,
 email_verifications, password_resets — plus the signup, invite, and identity-linking flows.
 What remains in this section:
@@ -94,6 +95,7 @@ the full design lives there. What remains in this section:
 | id           | text PK     | `task_...`                                                       |
 | task_type    | text        | `dispatch_job \| poll_provider \| ingest_outputs \| deliver_webhook \| settle_refund \| auto_refill \| rollup_usage \| …` |
 | payload      | jsonb       | usually `{ "job_id": ... }`                                      |
+| created_at   | timestamptz |                                                                  |
 | run_after    | timestamptz | scheduling + backoff                                             |
 | priority     | int         | lower = sooner                                                   |
 | attempts     | int         |                                                                  |
@@ -102,7 +104,6 @@ the full design lives there. What remains in this section:
 | locked_at    | timestamptz | visibility timeout base; null                                    |
 | status       | text        | `pending \| running \| done \| dead`                             |
 | last_error   | text        | null                                                             |
-| created_at   | timestamptz |                                                                  |
 
 Worker loop: `SELECT ... WHERE status='pending' AND run_after <= now() ORDER BY priority,
 run_after FOR UPDATE SKIP LOCKED LIMIT n`. Lowered fillfactor + aggressive autovacuum.
@@ -162,8 +163,8 @@ moved to **`logging.md`** (2026-07-05), which owns the logs product: truncation
 | key                | text        | UNIQUE (account_id, key)       |
 | request_hash       | text        | reject reuse with changed body |
 | response_snapshot  | jsonb       | replayed on repeat             |
-| expires_at         | timestamptz | 24h window                     |
 | created_at         | timestamptz |                                |
+| expires_at         | timestamptz | 24h window                     |
 
 ---
 
@@ -186,7 +187,7 @@ Moved to `payments.md` §6 (with the refund mirror and LLM exception).
 | job_outputs              | `out_`      | `jobs.md`       |
 | accounts                 | `acct_`     | `accounts.md`   |
 | users                    | `user_`     | `accounts.md`   |
-| user_identities          | `ident_`    | `accounts.md`   |
+| user_sso_connections     | `sso_`      | `accounts.md`   |
 | account_members          | `mem_`      | `accounts.md`   |
 | invitations              | `inv_`      | `accounts.md`   |
 | sessions                 | `sess_`     | `accounts.md`   |

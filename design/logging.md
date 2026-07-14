@@ -120,10 +120,10 @@ identical job pipeline (same billing, same statuses); they differ only in auth, 
 | response_body    | text        | truncated to 16 KB; `is_truncated`  |
 | is_truncated     | bool        |                                     |
 | latency_ms       | int         | null                                |
+| created_at       | timestamptz |                                     |
 | next_retry_at    | timestamptz | null                                |
 | delivered_at     | timestamptz | null                                |
 | gave_up_at       | timestamptz | null                                |
-| created_at       | timestamptz |                                     |
 
 ## 4. Retention & downsampling
 

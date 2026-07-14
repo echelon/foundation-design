@@ -77,7 +77,7 @@ Authoritative grammar lives in `models.md` (§1 naming rules, §13 versioning). 
 | ---------------- | ------------------------------------------------------------------------ |
 | Table names      | plural `snake_case`: `jobs`, `ledger_entries`, `auto_refill_rules`       |
 | Columns          | `snake_case`                                                              |
-| Column order     | `sequence_id` first, `id` second (`ids.md` §4), payload columns, timestamps last |
+| Column order     | `sequence_id` first, `id` second (`ids.md` §4), payload columns, timestamps last — `created_at` first among the timestamps (`coding_conventions.md` §7) |
 | FK columns       | **include the referenced table's singular name**: `invited_by_user_id`, `created_by_user_id` — never bare roles (`invited_by`). `{table}_id` forms (`account_id`, `job_id`) already comply |
 | Timestamps       | `{event}_at`, `timestamptz`: `created_at`, `canceled_at`, `last_triggered_at` |
 | Money            | `{name}_micros` (i64 micro-USD); catalog unit rates `{name}_nanos` (nano-USD) |
@@ -123,7 +123,7 @@ Registry and format rules: `ids.md` §5. Naming rules for new prefixes:
 | Hooks               | camelCase `use{Xxx}.ts`: `usePageTitle.ts`                           |
 | Props types         | local `interface {Component}Props`                                   |
 | Interfaces vs types | `interface` preferred; `type` reserved for unions and small aliases  |
-| Enums               | **never TS `enum`** — string-literal unions, generated from the OpenAPI spec (`enums.md`) |
+| Enums               | API-boundary enums: string-literal unions generated from the OpenAPI spec (`enums.md`); hand-written `enum` permitted off the wire (`coding_conventions.md` §6) |
 | DTO fields          | `snake_case` (mirror the wire; see §6)                               |
 | Exports             | named exports only; no default exports                               |
 | Path alias          | `@/` → `src/`                                                        |

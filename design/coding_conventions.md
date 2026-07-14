@@ -96,6 +96,10 @@ service concern.
   early returns, one call into `services/*`, response mapping. Nothing else.
 - **No SQL outside `db/queries`** — one function per query, sqlx compile-checked
   (`architecture.md` §5). Handlers never see SQL; services call query functions.
+  **Production-code rule only: tests in any crate may hit the database.** `db/queries`
+  exports the test helpers (`create_test_db()`, fixture builders) behind a `test-helpers`
+  feature; other crates import them as a dev-dependency for end-to-end DB integration tests
+  (`testing.md` §3–§5).
 - Clients (`crates/clients/*`) are pure HTTP — no DB dependencies, no service imports.
 - Never hold a DB transaction across provider I/O (`architecture.md` §9); clock is injected,
   not read ambiently (`testing.md` §1).
@@ -128,17 +132,36 @@ Full strategy in `testing.md`; style rules here:
   consts for helpers/callbacks. No `React.FC`. Props via local `interface {X}Props`.
 - Named exports only — no default exports, pages included.
 - Early returns in components too: bail on loading/empty/error states before the main render.
-- `interface` over `type` except for unions/small aliases; **no TS enums** — string-literal
-  unions generated from OpenAPI (`enums.md`); the API client is generated, never
-  hand-written (DIVERGENCE from ArtCraft's hand-rolled class-based `ApiManager` — codegen
-  was decided here precisely to retire that pattern).
+- `interface` over `type` except for unions/small aliases.
+- **API-boundary enums are string-literal unions** — that's simply what the OpenAPI codegen
+  emits, and unions accept plain wire strings (`"queued"`) with zero runtime footprint.
+  Hand-written TS `enum` is **permitted** where a namespaced constant set reads better;
+  known trade-offs, which is why unions stay the default near wire data: `enum` compiles to
+  a runtime object (disallowed under TS `erasableSyntaxOnly`, the Node type-stripping mode)
+  and a string enum won't accept a bare matching literal without a cast. (ArtCraft de facto
+  agrees: 2 enums total, unions everywhere else.)
+- The API client is generated, never hand-written (DIVERGENCE from ArtCraft's hand-rolled
+  class-based `ApiManager` — codegen was decided here precisely to retire that pattern).
 - Directory-by-kind: `pages/`, `components/` (+ `components/ui/` for shadcn primitives),
   `hooks/`, `lib/`, `context/`, `layouts/`, `types/`; `@/` alias to `src/`.
 - Tailwind utilities inline; `cn()` (`clsx` + `tailwind-merge`) for conditional classes.
 - State: local `useState` first, React Context for cross-cutting concerns (auth, theme);
   reach for a store (Zustand) only when an app demonstrably needs one.
 
-## 7. Review checklist (the recurring catches)
+## 7. Schema declaration style
+
+**Sign-off:** _unsigned_
+
+- **`created_at` always sorts above the other timestamp columns** in a table declaration
+  (then `updated_at`/event timestamps in whatever order reads best). Dimensional timestamps
+  that are part of a table's key (e.g. a rollup's `period_start`) are data, not row
+  metadata, and stay with the payload columns.
+- Column order overall: `sequence_id`, `id`, FKs, payload, timestamps (`ids.md` §4,
+  `naming_conventions.md` §4).
+- Every design-doc table lists a `null?` column; nullability is decided at design time, not
+  at migration time.
+
+## 8. Review checklist (the recurring catches)
 
 **Sign-off:** _unsigned_
 

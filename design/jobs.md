@@ -138,7 +138,6 @@ What we DO retry, invisibly, under a stable status:
 | status               | text        | enum, see §2                                                  |
 | queue_stage          | text        | enum, see §2; null unless status = `queued` (naming OPEN)     |
 | dispatch_attempts    | int         | dispatch tries so far (429/backoff visibility)                |
-| next_dispatch_at     | timestamptz | null; when the next dispatch attempt is due                   |
 | failure_code         | text        | null; enum owned by `api.md` §2 (bt-editable list)            |
 | failure_message      | text        | null; human-readable                                          |
 | canceled_by          | text        | null; enum, see below                                         |
@@ -153,6 +152,7 @@ What we DO retry, invisibly, under a stable status:
 | webhook_url          | text        | null                                                          |
 | webhook_events       | text[]      |                                                               |
 | created_at           | timestamptz | = enqueue + charge moment                                     |
+| next_dispatch_at     | timestamptz | null; when the next dispatch attempt is due (pairs with dispatch_attempts) |
 | dispatched_at        | timestamptz | null; when the provider accepted (queue_stage → provider)     |
 | started_at           | timestamptz | null; when generation began (status → running)                |
 | completed_at         | timestamptz | null; terminal timestamp                                      |

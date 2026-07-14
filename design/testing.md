@@ -54,19 +54,21 @@ data. Comprehensive flow tests live here:
 
 | Flow                    | Asserts                                                               |
 | ----------------------- | ----------------------------------------------------------------------- |
-| Signup (all three)      | User+account+membership+session created **in one transaction**; email collision → no silent merge; SSO identity row correctness |
+| Signup (all three)      | User+account+membership+session created **in one transaction**; email collision → no silent merge; SSO connection row correctness |
 | Invites (all three doors)| Code + magic-link resolution, expiry, email-mismatch recording          |
-| Identity linking        | Link/unlink guards (≥1 method), cross-user identity conflict            |
+| SSO linking             | Link/unlink guards (≥1 method), cross-user connection conflict          |
 | Admission transaction   | Balance check → ledger entry → balance update → job insert → queue task, atomically; 402 paths (insufficient, spend limit); idempotency replay |
 | Job lifecycle           | Full walk queued → terminal via the transition function; refund on failed/expired/canceled; `job_events` written in the same transaction |
 | Queue worker            | `FOR UPDATE SKIP LOCKED` claim semantics, visibility timeout, dead-lettering |
 | Webhooks                | Delivery attempts logged, signature valid, Stripe-event dedupe          |
 | Ledger invariants       | `balance_after_micros` chain consistency; balance never negative        |
 
-**Fixtures:** a `test_fixtures` crate builds graphs programmatically (`fixture_account()`,
-`fixture_job(...)` builders with sane defaults, override-what-you-test) — no SQL dump files;
-fixtures go through the same code paths production uses (`services/*`), so schema drift
-breaks loudly.
+**Fixtures & helpers live in `db/queries`** (the SQL crate), behind a `test-helpers` feature:
+`create_test_db()`, `fixture_account()`, `fixture_job(...)` builders with sane defaults,
+override-what-you-test — no SQL dump files. **Any crate may import them as a dev-dependency**
+and run its own end-to-end DB integration tests; the no-SQL-outside-`db/queries` rule
+(`coding_conventions.md` §4) is a production-code rule, not a test rule. Fixtures go through
+the same code paths production uses (`services/*`), so schema drift breaks loudly.
 
 **Isolation between tests:** each test runs in its own schema or its own transaction rolled
 back at the end (per-test DB creation à la `#[sqlx::test]` is the fallback for tests that
