@@ -83,6 +83,13 @@ Format spec, entropy math, the keep-the-millisecond-clock decision, and the pref
     (e.g. `max_tokens × rate`); actuals are charged at completion. If the worst-case bill
     exceeds the balance, the enqueue is blocked with a `402` — a job may never run if it
     could produce a bill the customer can't pay.
+  - **Concurrent metered jobs can't stack past the balance (ADDED 2026-07-14):** metered
+    admission checks against the balance **minus the summed worst-case estimates of the
+    account's other non-terminal metered jobs** (`jobs.estimated_max_micros`, live rows
+    only, under the same `FOR UPDATE`), not the raw balance — otherwise two in-flight
+    $8-estimate streams against a $10 balance both pass and completion charges go negative.
+    Still no holds table: the outstanding exposure is derived from live job rows (partial
+    index on non-terminal metered jobs), not stored balances.
 - Admission: in one transaction — `SELECT ... FOR UPDATE` the balance row; if
   `balance_micros < cost` (fixed) or `balance_micros < worst_case_estimate` (metered) →
   `402 Payment Required` (machine-readable body with balance, cost, top-up link); else insert
@@ -134,7 +141,9 @@ foundation/
 │   │   ├── anthropic/              # messages API (LLM)
 │   │   ├── kling/                  # HS256 JWT auth, create+poll, callback
 │   │   ├── xai/                    # Grok image (sync), Grok Imagine video (poll), chat
-│   │   └── vidu/                   # create+poll, callback, `Token` auth scheme
+│   │   ├── vidu/                   # create+poll, callback, `Token` auth scheme
+│   │   ├── bfl/                    # FLUX family — submit → poll returned polling_url
+│   │   └── worldlabs/              # Marble worlds/splats — LRO create+poll
 │   ├── router/                     # Any-API param translation: canonical request → provider
 │   │                               #   request; prune/coerce; modality inference
 │   ├── services/                   # business logic, DB-aware

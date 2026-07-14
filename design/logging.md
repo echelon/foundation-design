@@ -54,31 +54,31 @@ Monthly `PARTITION BY RANGE (created_at)`; minimal indexes: (account_id, created
 
 **Sign-off:** _unsigned_
 
-| column              | type        | notes                                                                                          |
-| ------------------- | ----------- | ---------------------------------------------------------------------------------------------- |
-| sid                 | bigint      | identity; never exposed (ids.md §4)                                                            |
-| id                  | text PK     | `rlog_...`                                                                                     |
-| account_id          | text FK     | → accounts                                                                                     |
-| api_key_id          | text FK     | → api_keys; null when cookie-authed                                                            |
-| session_id          | text FK     | → sessions; set for dashboard/console requests (exactly one of api_key_id / session_id is set) |
-| job_id              | text FK     | → jobs; see note below                                                                         |
-| end_user_id         | text FK     | → end_users; null                                                                              |
-| source              | text        | `api_key, dashboard, mcp`                                                                      |
-| method              | text        |                                                                                                |
-| path                | text        |                                                                                                |
-| api_version         | date        |                                                                                                |
-| ip                  | inet        |                                                                                                |
-| user_agent          | text        |                                                                                                |
-| request_headers     | jsonb       | allowlisted only                                                                               |
-| request_body        | jsonb       | redacted                                                                                       |
-| request_truncated   | bool        | `is_truncated` for the request body                                                            |
-| request_body_bytes  | bigint      | original size pre-truncation                                                                   |
-| response_status     | int         |                                                                                                |
-| response_body       | jsonb       | redacted                                                                                       |
-| response_truncated  | bool        |                                                                                                |
-| response_body_bytes | bigint      |                                                                                                |
-| latency_ms          | int         |                                                                                                |
-| created_at          | timestamptz | partition key                                                                                  |
+| column              | type        | notes                                                                                                                           |
+| ------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| sid                 | bigint      | identity; never exposed (ids.md §4)                                                                                             |
+| id                  | text PK     | `rlog_...`                                                                                                                      |
+| account_id          | text FK     | → accounts; **null for unauthenticated requests** (signup, login, public endpoints)                                             |
+| api_key_id          | text FK     | → api_keys; null when cookie-authed                                                                                             |
+| session_id          | text FK     | → sessions; set for dashboard/console requests (**at most one** of api_key_id / session_id is set; both null ⇔ unauthenticated) |
+| job_id              | text FK     | → jobs; see note below                                                                                                          |
+| end_user_id         | text FK     | → end_users; null                                                                                                               |
+| source              | text        | `api_key, dashboard, mcp`                                                                                                       |
+| method              | text        |                                                                                                                                 |
+| path                | text        |                                                                                                                                 |
+| api_version         | date        |                                                                                                                                 |
+| ip                  | inet        |                                                                                                                                 |
+| user_agent          | text        |                                                                                                                                 |
+| request_headers     | jsonb       | allowlisted only                                                                                                                |
+| request_body        | jsonb       | redacted                                                                                                                        |
+| request_truncated   | bool        | `is_truncated` for the request body                                                                                             |
+| request_body_bytes  | bigint      | original size pre-truncation                                                                                                    |
+| response_status     | int         |                                                                                                                                 |
+| response_body       | jsonb       | redacted                                                                                                                        |
+| response_truncated  | bool        |                                                                                                                                 |
+| response_body_bytes | bigint      |                                                                                                                                 |
+| latency_ms          | int         |                                                                                                                                 |
+| created_at          | timestamptz | partition key                                                                                                                   |
 
 **Why `job_id` is nullable (clarified 2026-07-05):** `request_logs` records EVERY API
 request, not just generations — `GET /v1/jobs`, key management, balance checks, auth, catalog

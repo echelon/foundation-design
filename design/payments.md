@@ -20,8 +20,11 @@ product copy (ledger entry types like `promo` are internal terms).
 **Sign-off:** _unsigned_
 
 - One **prepaid balance** per account (`i64` micro-USD). Jobs charge it at enqueue (metered
-  jobs: worst-case check at enqueue, actuals at completion — architecture.md §4); failures
-  refund it. Hard `402` when balance < cost. No negative balances.
+  jobs: worst-case check against balance minus outstanding metered exposure at enqueue,
+  actuals at completion — architecture.md §4); failures refund it. Hard `402` when
+  balance < cost. **No negative balances via spending** — the single exception below zero
+  is a chargeback debit (§5), which suspends the account in the same transaction, so no
+  spending or refill path ever acts on a negative balance.
 - The **ledger is the source of truth** (append-only); the balance is a cache updated in the
   same transaction under `FOR UPDATE`; a reconciliation task asserts
   `balance == SUM(ledger)` per account.
@@ -177,8 +180,10 @@ Card-on-file without a purchase: `mode=setup` Checkout Session (SetupIntent unde
   `off_session: true`, `confirm: true`, idempotency key `refill:{rule_id}:{yyyymmddhh}` (also
   enforces at-most-hourly cadence per rule).
 - Guards: `daily_max_micros` (sum of today's `auto_refill` entries), rule disabled ⇒ no-op,
-  and **3 consecutive failures auto-disable the rule** + email the admins (expired cards
-  shouldn't retry forever).
+  **account not `active` ⇒ no-op** (a suspended account — e.g. mid-chargeback, §5 — must
+  never trigger an off-session charge against a disputed card), and **3 consecutive
+  failures auto-disable the rule** + email the admins (expired cards shouldn't retry
+  forever).
 - SCA: off-session charges can fail with `authentication_required` — treated as a failure
   (email links the user to a Checkout session to re-authenticate the card). We never hold
   jobs waiting on a refill; a refill that lands simply makes the next request pass admission.
@@ -197,17 +202,17 @@ Pipeline:
    the processing is retryable/idempotent (every money mutation goes through ledger
    idempotency keys).
 
-| Event                                          | Handling                                                                                                                                                   |
-| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `checkout.session.completed`                   | mode=payment → ledger `topup` (idempotent by session id); save PM if setup_future_usage; mode=setup → register payment_method                              |
-| `payment_intent.succeeded`                     | auto-refill confirmations → ledger `auto_refill`                                                                                                           |
-| `payment_intent.payment_failed`                | auto-refill failure bookkeeping (§4), notify                                                                                                               |
-| `setup_intent.succeeded`                       | payment_methods upsert                                                                                                                                     |
-| `payment_method.detached` / `customer.updated` | mirror card list / default changes                                                                                                                         |
-| `charge.refunded`                              | (we initiated) ledger `adjustment` with memo; support tooling                                                                                              |
-| `charge.dispute.created`                       | ledger `chargeback` (debit), **account → suspended** pending review — disputes on a prepaid API business are a fraud signal, not a customer-service signal |
-| `charge.dispute.closed` (won)                  | ledger `chargeback_reversal`, un-suspend                                                                                                                   |
-| `radar.early_fraud_warning.created`            | alert ops; optional preemptive suspend                                                                                                                     |
+| Event                                          | Handling                                                                                                                                                                                                                                                                                                              |
+| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `checkout.session.completed`                   | mode=payment → ledger `topup` (idempotent by session id); save PM if setup_future_usage; mode=setup → register payment_method                                                                                                                                                                                         |
+| `payment_intent.succeeded`                     | auto-refill confirmations → ledger `auto_refill`                                                                                                                                                                                                                                                                      |
+| `payment_intent.payment_failed`                | auto-refill failure bookkeeping (§4), notify                                                                                                                                                                                                                                                                          |
+| `setup_intent.succeeded`                       | payment_methods upsert                                                                                                                                                                                                                                                                                                |
+| `payment_method.detached` / `customer.updated` | mirror card list / default changes                                                                                                                                                                                                                                                                                    |
+| `charge.refunded`                              | (we initiated) ledger `adjustment` with memo; support tooling                                                                                                                                                                                                                                                         |
+| `charge.dispute.created`                       | ledger `chargeback` (debit — MAY take the balance negative; this is the accounting truth and the sole exception to §1's floor, safe because the same transaction suspends the account), **account → suspended** pending review — disputes on a prepaid API business are a fraud signal, not a customer-service signal |
+| `charge.dispute.closed` (won)                  | ledger `chargeback_reversal`, un-suspend                                                                                                                                                                                                                                                                              |
+| `radar.early_fraud_warning.created`            | alert ops; optional preemptive suspend                                                                                                                                                                                                                                                                                |
 
 Unhandled event types are stored (audit) and marked processed. A daily reconciliation task
 cross-checks Stripe balance transactions vs our `topup`/`auto_refill` ledger entries.
@@ -232,9 +237,14 @@ COMMIT;
 
 Refunds (job failed/expired/canceled-before-dispatch) mirror it with
 `entry_type = 'job_refund'`, `idempotency_key = 'refund:{job_id}'`, and `jobs.refunded_micros`
-set. LLM jobs use the **metered** billing mode (architecture.md §4): admission-check with the
-`max_tokens` worst-case estimate — blocked with `402` if the worst case exceeds the balance —
-and a single `job_charge` written at completion with actuals.
+set. **A refund refunds what was actually charged, never an estimate (CLARIFIED
+2026-07-14):** metered jobs that fail before the completion-time charge have NO `job_charge`
+entry, so they produce **no refund entry at all** — nothing was taken. Only a metered job
+that was charged actuals and then must be made whole (our bug post-charge) refunds that
+charged amount. LLM jobs use the **metered** billing mode (architecture.md §4):
+admission-check with the `max_tokens` worst-case estimate against balance minus outstanding
+metered exposure — blocked with `402` if the worst case exceeds it — and a single
+`job_charge` written at completion with actuals.
 
 ## 7. Console & API surface (already in api.md §8 — recap)
 

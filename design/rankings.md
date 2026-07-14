@@ -44,28 +44,28 @@ One rollup table, hourly grain; coarser grains are derived, not stored separatel
 
 **Sign-off:** _unsigned_
 
-| column            | type        | notes                                                                       |
-| ----------------- | ----------- | --------------------------------------------------------------------------- |
-| sid               | bigint      | identity; never exposed (ids.md §4)                                         |
-| id                | text PK     | `roll_...`                                                                  |
-| grain             | text        | `hour, day, week, month`                                                    |
-| period_start      | timestamptz | UTC bucket start                                                            |
-| media_type        | text        | `image, video, audio, mesh, splat, text`                                    |
-| model             | text        | catalog slug                                                                |
-| modality          | text        |                                                                             |
-| provider          | text        | upstream actually used                                                      |
-| source            | text        | `api, dashboard, mcp` (also rolled up as `all`)                             |
-| jobs_total        | bigint      |                                                                             |
-| jobs_succeeded    | bigint      |                                                                             |
-| jobs_failed       | bigint      |                                                                             |
-| output_units      | numeric     | unit depends on media: seconds, images, tokens…                             |
-| tokens_in         | bigint      | LLM only                                                                    |
-| tokens_out        | bigint      | LLM only                                                                    |
-| distinct_accounts | int         | PRIVATE — powers the K-anonymity gate, never exposed                        |
-| spend_micros      | bigint      | PRIVATE — internal analytics only                                           |
-| p50_latency_ms    | int         | queue→terminal; interesting public stat                                     |
-| created_at        | timestamptz |                                                                             |
-|                   |             | UNIQUE (grain, period_start, media_type, model, modality, provider, source) |
+| column            | type        | notes                                                                              |
+| ----------------- | ----------- | ---------------------------------------------------------------------------------- |
+| sid               | bigint      | identity; never exposed (ids.md §4)                                                |
+| id                | text PK     | `roll_...`                                                                         |
+| grain             | text        | `hour, day, week, month`                                                           |
+| period_start      | timestamptz | UTC bucket start                                                                   |
+| media_type        | text        | `image, video, audio, mesh, splat, text`                                           |
+| model             | text        | catalog slug                                                                       |
+| modality          | text        |                                                                                    |
+| provider          | text        | upstream actually used                                                             |
+| source            | text        | `api_key, dashboard, mcp` (also rolled up as `all`)                                |
+| jobs_total        | bigint      |                                                                                    |
+| jobs_succeeded    | bigint      |                                                                                    |
+| jobs_failed       | bigint      |                                                                                    |
+| output_units      | numeric     | unit depends on media: seconds, images, tokens…                                    |
+| tokens_in         | bigint      | LLM only                                                                           |
+| tokens_out        | bigint      | LLM only                                                                           |
+| distinct_accounts | int         | PRIVATE — K-anonymity gate; per-grain COUNT(DISTINCT), never summed across buckets |
+| spend_micros      | bigint      | PRIVATE — internal analytics only                                                  |
+| p50_latency_ms    | int         | queue→terminal; interesting public stat                                            |
+| created_at        | timestamptz |                                                                                    |
+|                   |             | UNIQUE (grain, period_start, media_type, model, modality, provider, source)        |
 
 Tiny forever: even 500 models × ~50 dimension combos × 8,760 hours/year is a few million
 skinny rows/year — no partitioning pressure for a long time.
@@ -74,12 +74,12 @@ skinny rows/year — no partitioning pressure for a long time.
 
 **Sign-off:** _unsigned_
 
-| Task                | Schedule              | What it does                                                                                                   |
-| ------------------- | --------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `rollup_usage:hour` | ~5 min past each hour | Aggregates `jobs` for the closed hour → upsert (`ON CONFLICT` replace) — idempotent, re-runnable, backfillable |
-| `rollup_usage:day`  | daily                 | Sums the 24 hourly rows → day rows (likewise week/month from days)                                             |
-| `rollup_repair`     | daily                 | Re-rolls the trailing 48h (late-finishing jobs move buckets)                                                   |
-| `rankings_snapshot` | daily                 | Exports public JSON snapshots to R2 (`rankings/{period}.json`) for writeups + archival                         |
+| Task                | Schedule              | What it does                                                                                                                                                                                                                                                                   |
+| ------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `rollup_usage:hour` | ~5 min past each hour | Aggregates `jobs` for the closed hour → upsert (`ON CONFLICT` replace) — idempotent, re-runnable, backfillable                                                                                                                                                                 |
+| `rollup_usage:day`  | daily                 | Day rows: additive counters (jobs_*, output_units, tokens, spend) sum the 24 hourly rows; **`distinct_accounts` and `p50_latency_ms` are NOT additive** and are recomputed from the `jobs` source rows per day/week/month bucket (COUNT(DISTINCT account_id), true percentile) |
+| `rollup_repair`     | daily                 | Re-rolls the trailing 48h (late-finishing jobs move buckets)                                                                                                                                                                                                                   |
+| `rankings_snapshot` | daily                 | Exports public JSON snapshots to R2 (`rankings/{period}.json`) for writeups + archival                                                                                                                                                                                         |
 
 Recorded on the `jobs` table clock: a job counts in the bucket of its `completed_at` (terminal
 time), not enqueue time — "what ran" not "what was requested".

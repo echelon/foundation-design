@@ -1,6 +1,6 @@
 # APIs: the Any API
 
-**Sign-off:** 2026-07-14 
+**Sign-off:** _unsigned_
 
 <!-- bt: initials + date when approved (e.g. "bt 2026-07-05"). Per-section sign-offs below;
      the top one covers the whole document. Assistants: see ../CLAUDE.md. -->
@@ -77,20 +77,27 @@ polling `/v1/jobs/{id}` or webhook — never a held-open call (DECIDED 2026-07-0
 
 The only exception is `/v1/any/text/sync` which is **synchronous**.
 
-## 4. Text through Any — synchronous
+## 4. Text through Any — async by default, `/sync` variant
 
-**Sign-off:** bt 2026-07-14
+**Sign-off:** _unsigned_
 
-`POST /v1/any/text` is the LLM member of the family and it is **synchronous** (held-open,
-optional SSE via `"stream": true`) — same execution model as the chat plane, same metered
-billing, same job row (`api_shape = any`, `media_type = text`).
+Text is the LLM member of the family, with two doors (matching the §2 table — this section
+previously said sync-only and was ALIGNED 2026-07-14 to bt's §2 revision):
 
-- Body is our **canonical text schema** (`model`, `messages`, `max_tokens`, samplers…) — the
-  Any-style canonicalized superset, NOT the OpenAI wire dialect. OpenAI compat lives at
-  `/v1/chat/completions` (`apis_llm.md`); this endpoint exists so the Any plane covers all
-  media types uniformly.
-- Response: `200` with the completion inline + the job fields (`id`, `charged_micros`,
-  `usage`, `param_adjustments`).
+- **`POST /v1/any/text` — asynchronous**, uniform with every other media type: `201` + Job
+  resource, dispatch through the queue, result by polling or webhook. The completion lands
+  as an output of `kind = text` (inline or file spill — `files.md` §3). This is the door for
+  batchy/agentic callers who don't want to hold a connection open.
+- **`POST /v1/any/text/sync` — synchronous**: held-open, optional SSE via `"stream": true` —
+  same execution model as the chat plane. Response: `200` with the completion inline + the
+  job fields (`id`, `charged_micros`, `usage`, `param_adjustments`).
+
+Both doors share the same body — our **canonical text schema** (`model`, `messages`,
+`max_tokens`, samplers…), the Any-style canonicalized superset, NOT the OpenAI wire dialect
+(OpenAI compat lives at `/v1/chat/completions`, `apis_llm.md`) — the same metered billing
+(worst-case admission, actuals at completion), and the same job row shape
+(`api_shape = any`, `media_type = text`; the async door walks `queued → running`, the sync
+door is born `running`).
 
 ## 5. Fit with the other planes
 

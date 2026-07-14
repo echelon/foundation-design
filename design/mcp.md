@@ -50,7 +50,7 @@ and instruct agents to call `cost` first when the user hasn't approved a price; 
 
 Your question — does MCP need schema? **No new tables.** MCP calls authenticate with normal
 API keys and create normal jobs/logs. For analytics we extend the existing `source` enum
-(`api | dashboard | mcp`) on `jobs` and `request_logs` — better than a boolean because it's
+(`api_key | dashboard | mcp`) on `jobs` and `request_logs` — better than a boolean because it's
 one dimension, already indexed, already flowing into the usage rollups (`rankings.md`) — so
 "what share of traffic is agentic?" is a one-liner, and a future fourth source doesn't need
 another column.

@@ -102,6 +102,16 @@ section.
 Worker loop: `SELECT ... WHERE status='pending' AND run_after <= now() ORDER BY priority,
 run_after FOR UPDATE SKIP LOCKED LIMIT n`. Lowered fillfactor + aggressive autovacuum.
 
+**Visibility-timeout reclaim (ADDED 2026-07-14** — `locked_at` was named "visibility timeout
+base" with no reaper specified): a sweeper task runs every ~30s:
+`UPDATE queue_tasks SET status='pending', locked_by=NULL, locked_at=NULL,
+attempts=attempts+1 WHERE status='running' AND locked_at < now() - {visibility_timeout}`
+(timeout per task_type; dispatch ~2 min, ingest ~10 min). Rows reaching `max_attempts` go
+`dead` + alarm instead. Without this, any worker crash/deploy kill strands its in-flight
+tasks forever and the charged job silently expires. Task handlers must therefore be
+idempotent under redelivery (dispatch checks `provider_job_id` before re-submitting
+upstream).
+
 ---
 
 ## 4. Billing

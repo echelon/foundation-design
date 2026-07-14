@@ -83,8 +83,9 @@ returns the worst-case estimate + the rates (same body, no call, no charge).
 
 - No conversation/thread state (`previous_response_id`-style) — stateless, industry default;
   punted (`../reports/jobs-design-considerations-2.md` §5).
-- No async/queued LLM jobs in v1 — chat is inherently held-open; `/v1/batch` is the future
-  async lane.
+- No async LLM jobs **on this plane** — `/v1/chat/completions` is always held-open (that's
+  the OpenAI contract); the queued-LLM lane is the Any plane's `POST /v1/any/text`
+  (`api_any.md` §4), and `/v1/batch` remains the future bulk lane.
 - No Anthropic-native `/v1/messages` compat endpoint in v1 — the OpenAI dialect is the
   lingua franca; revisit on demand.
 - Server-side web search / tool execution: roadmap (`future-roadmap.md` §1).

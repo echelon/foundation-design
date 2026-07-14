@@ -65,17 +65,20 @@ host.
 
 ```
 bytedance      google         openai         anthropic      kling
-xai            vidu           worldlabs      elevenlabs     cartesia
-minimax        deepgram       assemblyai     stability      runway
-luma           tripo          meshy          hyper3d        tencent
-fal            replicate
+xai            vidu           bfl            worldlabs      elevenlabs
+cartesia       minimax        deepgram       assemblyai     stability
+runway         luma           tripo          meshy          hyper3d
+tencent
 ```
 
-- Launch subset: `bytedance google openai anthropic kling xai vidu` — plus `fal` as the
-  aggregator route for long-tail models we haven't integrated directly.
-- `fal` / `replicate` as Providers is deliberate: the catalog can route a model through an
-  aggregator first and flip it to a direct integration later without changing the model's
-  slug — routing is a catalog field, identity is not.
+- Launch subset (= `providers.md` §1's committed crates, FIXED 2026-07-14 — previously
+  omitted `bfl`/`worldlabs`): `openai google bytedance kling bfl xai anthropic vidu
+  worldlabs`.
+- **No aggregator variants (FIXED 2026-07-14):** `fal` / `replicate` removed — providers.md
+  and `future-roadmap.md` §7 rule: we never route through aggregators, we compete with
+  them. A variant here means "we hold credentials and wrote a client crate," and no such
+  crate will exist. (Model slugs never encoded routing anyway, so a future direct
+  integration of a long-tail model is purely additive.)
 
 ### Per-media model enums — canonical lists live in `models.md`
 
