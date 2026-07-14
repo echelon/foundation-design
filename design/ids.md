@@ -1,6 +1,6 @@
 # Identifiers
 
-**Sign-off:** bt 2026-07-14
+**Sign-off:** _unsigned_
 <!-- bt: initials + date when approved (e.g. "bt 2026-07-05"). Per-section sign-offs below;
      the top one covers the whole document. Assistants: see ../CLAUDE.md. -->
 
@@ -89,7 +89,7 @@ where strict arrival order matters — already covers it.
 
 ## 4. `sequence_id` — every table (REVISED 2026-07-14)
 
-**Sign-off:** bt 2026-07-14
+**Sign-off:** _unsigned_
 
 Every table gets an auto-increment column: **`sequence_id bigint generated always as
 identity`**, declared first, with the prefixed string `id` (the primary key) declared
@@ -105,9 +105,8 @@ immediately after it.
   belt-and-suspenders everywhere.
 - Not gapless (rollbacks burn values) — anything needing gapless business numbering (invoice
   numbers) is its own counter table.
-- **Design docs omit it:** table listings in `schema.md`/siblings show `id` first and don't
-  repeat `sequence_id`; it's implicit as the first column of every table, added mechanically
-  by the migration generator.
+- **Design docs list it explicitly (bt 2026-07-14):** every table listing in `schema.md` and
+  its siblings opens with the `sequence_id` row, `id` directly beneath — no implicit columns.
 
 ## 5. Prefix registry
 

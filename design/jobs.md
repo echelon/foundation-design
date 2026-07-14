@@ -160,45 +160,46 @@ saying whose queue, and metadata saying why it's still there.
 
 ### jobs  (`job_`)
 
-| column               | type        | notes                                                        |
-| -------------------- | ----------- | ------------------------------------------------------------ |
-| id                   | text PK     | `job_...`                                                     |
-| account_id           | text FK     | → accounts                                                    |
-| api_key_id           | text FK     | → api_keys; **null = dashboard session**                      |
-| user_id              | text FK     | → users; the human, when known                                |
-| end_user_id          | text FK     | → end_users; null — the customer's customer, when supplied    |
-| source               | text        | enum, see below                                               |
-| media_type           | text        | enum, see below                                               |
-| model                | text        | canonical catalog slug, e.g. `kling_video_v3_pro`             |
-| modality             | text        | e.g. `image_to_video` (resolved, not necessarily requested); values = `models.md` §11 |
-| api_shape            | text        | enum, see below                                               |
-| api_version          | date        | version the request came in on                                |
-| idempotency_key      | text        | null; UNIQUE (account_id, idempotency_key)                    |
-| request_params       | jsonb       | canonicalized post-coercion params                            |
-| param_adjustments    | jsonb       | what the Any layer pruned/coerced                             |
-| retry_policy         | jsonb       | null; RESERVED — customer retry/fallback policy (§3), unused in v1 |
-| status               | text        | enum, see §2                                                  |
-| queue_stage          | text        | enum, see §2; null unless status = `queued` (naming OPEN)     |
-| dispatch_attempts    | int         | dispatch tries so far (429/backoff visibility)                |
-| failure_code         | text        | null; enum owned by `api.md` §2 (bt-editable list)            |
-| failure_message      | text        | null; human-readable                                          |
-| canceled_by          | text        | null; enum, see below                                         |
-| provider             | text        | catalog provider slug, e.g. `bytedance` (`enums.md` Provider) |
-| provider_account     | text        | credential pool name from config, e.g. `byteplus_ultra`       |
-| provider_job_id      | text        | upstream's task/request id; indexed                           |
-| price_unit           | text        | snapshot: `per_video_second`, `per_image`, `per_token_in/out`, … (catalog-owned set) |
-| unit_amount_nanos    | bigint      | snapshot: nano-USD rate charged                               |
-| quantity             | numeric     | snapshot: units billed (e.g. seconds)                         |
+| column               | type        | notes                                                                                                 |
+| -------------------- | ----------- | ----------------------------------------------------------------------------------------------------- |
+| sequence_id          | bigint      | identity; never exposed (ids.md §4)                                                                   |
+| id                   | text PK     | `job_...`                                                                                             |
+| account_id           | text FK     | → accounts                                                                                            |
+| api_key_id           | text FK     | → api_keys; **null = dashboard session**                                                              |
+| user_id              | text FK     | → users; the human, when known                                                                        |
+| end_user_id          | text FK     | → end_users; null — the customer's customer, when supplied                                            |
+| source               | text        | enum, see below                                                                                       |
+| media_type           | text        | enum, see below                                                                                       |
+| model                | text        | canonical catalog slug, e.g. `kling_video_v3_pro`                                                     |
+| modality             | text        | e.g. `image_to_video` (resolved, not necessarily requested); values = `models.md` §11                 |
+| api_shape            | text        | enum, see below                                                                                       |
+| api_version          | date        | version the request came in on                                                                        |
+| idempotency_key      | text        | null; UNIQUE (account_id, idempotency_key)                                                            |
+| request_params       | jsonb       | canonicalized post-coercion params                                                                    |
+| param_adjustments    | jsonb       | what the Any layer pruned/coerced                                                                     |
+| retry_policy         | jsonb       | null; RESERVED — customer retry/fallback policy (§3), unused in v1                                    |
+| status               | text        | enum, see §2                                                                                          |
+| queue_stage          | text        | enum, see §2; null unless status = `queued` (naming OPEN)                                             |
+| dispatch_attempts    | int         | dispatch tries so far (429/backoff visibility)                                                        |
+| failure_code         | text        | null; enum owned by `api.md` §2 (bt-editable list)                                                    |
+| failure_message      | text        | null; human-readable                                                                                  |
+| canceled_by          | text        | null; enum, see below                                                                                 |
+| provider             | text        | catalog provider slug, e.g. `bytedance` (`enums.md` Provider)                                         |
+| provider_account     | text        | credential pool name from config, e.g. `byteplus_ultra`                                               |
+| provider_job_id      | text        | upstream's task/request id; indexed                                                                   |
+| price_unit           | text        | snapshot: `per_video_second`, `per_image`, `per_token_in/out`, … (catalog-owned set)                  |
+| unit_amount_nanos    | bigint      | snapshot: nano-USD rate charged                                                                       |
+| quantity             | numeric     | snapshot: units billed (e.g. seconds)                                                                 |
 | charged_micros       | bigint      | fixed mode: set at enqueue, never changes. metered mode (LLM): set at completion (architecture.md §4) |
-| refunded_micros      | bigint      | 0 unless failed/canceled/expired → refunded                   |
-| webhook_url          | text        | null                                                          |
-| webhook_events       | text[]      |                                                               |
-| created_at           | timestamptz | = enqueue + charge moment                                     |
-| next_dispatch_at     | timestamptz | null; when the next dispatch attempt is due (pairs with dispatch_attempts) |
-| dispatched_at        | timestamptz | null; when the provider accepted (queue_stage → provider)     |
-| started_at           | timestamptz | null; when generation began (status → running)                |
-| completed_at         | timestamptz | null; terminal timestamp                                      |
-| expires_at           | timestamptz | give-up deadline                                              |
+| refunded_micros      | bigint      | 0 unless failed/canceled/expired → refunded                                                           |
+| webhook_url          | text        | null                                                                                                  |
+| webhook_events       | text[]      |                                                                                                       |
+| created_at           | timestamptz | = enqueue + charge moment                                                                             |
+| next_dispatch_at     | timestamptz | null; when the next dispatch attempt is due (pairs with dispatch_attempts)                            |
+| dispatched_at        | timestamptz | null; when the provider accepted (queue_stage → provider)                                             |
+| started_at           | timestamptz | null; when generation began (status → running)                                                        |
+| completed_at         | timestamptz | null; terminal timestamp                                                                              |
+| expires_at           | timestamptz | give-up deadline                                                                                      |
 
 Indexes: (account_id, created_at desc), (account_id, status), (provider, provider_job_id),
 (status, expires_at) for the reaper, (account_id, end_user_id, created_at) partial where
@@ -225,13 +226,14 @@ NOT included (open question, leaning no): `parent_job_id` — causal lineage ana
 
 ### job_events  (`jevt_`)
 
-| column      | type        | notes                                                              |
-| ----------- | ----------- | ------------------------------------------------------------------ |
-| id          | text PK     | `jevt_...`                                                          |
-| job_id      | text FK     | → jobs                                                              |
+| column      | type        | notes                                                                                                                                                                                   |
+| ----------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| sequence_id | bigint      | identity; never exposed (ids.md §4)                                                                                                                                                     |
+| id          | text PK     | `jevt_...`                                                                                                                                                                              |
+| job_id      | text FK     | → jobs                                                                                                                                                                                  |
 | event_type  | text        | `created \| charged \| dispatch_attempted \| provider_accepted \| poll_tick \| provider_completed \| output_ingested \| webhook_sent \| refunded \| failed \| canceled \| expired \| …` |
-| data        | jsonb       | small payload (e.g. `{attempt: 3, retry_in_ms: 8000}` on a 429)     |
-| created_at  | timestamptz |                                                                     |
+| data        | jsonb       | small payload (e.g. `{attempt: 3, retry_in_ms: 8000}` on a 429)                                                                                                                         |
+| created_at  | timestamptz |                                                                                                                                                                                         |
 
 Append-only state-machine trail; merged into the customer debug timeline (`logging.md`).
 Retries live HERE (as `dispatch_attempted` events), never as statuses.

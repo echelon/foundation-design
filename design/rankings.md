@@ -42,26 +42,27 @@ One rollup table, hourly grain; coarser grains are derived, not stored separatel
 
 ### usage_rollups  (`roll_`)
 
-| column             | type        | notes                                                  |
-| ------------------ | ----------- | ------------------------------------------------------- |
-| id                 | text PK     | `roll_...`                                              |
-| grain              | text        | `hour \| day \| week \| month`                          |
-| period_start       | timestamptz | UTC bucket start                                        |
-| media_type         | text        | `image \| video \| audio \| mesh \| splat \| text`      |
-| model              | text        | catalog slug                                            |
-| modality           | text        |                                                         |
-| provider           | text        | upstream actually used                                  |
-| source             | text        | `api \| dashboard \| mcp` (also rolled up as `all`)     |
-| jobs_total         | bigint      |                                                         |
-| jobs_succeeded     | bigint      |                                                         |
-| jobs_failed        | bigint      |                                                         |
-| output_units       | numeric     | unit depends on media: seconds, images, tokens…         |
-| tokens_in          | bigint      | LLM only                                                |
-| tokens_out         | bigint      | LLM only                                                |
-| distinct_accounts  | int         | PRIVATE — powers the K-anonymity gate, never exposed    |
-| spend_micros       | bigint      | PRIVATE — internal analytics only                       |
-| p50_latency_ms     | int         | queue→terminal; interesting public stat                 |
-| created_at         | timestamptz |                                                         |
+| column             | type        | notes                                                                       |
+| ------------------ | ----------- | --------------------------------------------------------------------------- |
+| sequence_id        | bigint      | identity; never exposed (ids.md §4)                                         |
+| id                 | text PK     | `roll_...`                                                                  |
+| grain              | text        | `hour \| day \| week \| month`                                              |
+| period_start       | timestamptz | UTC bucket start                                                            |
+| media_type         | text        | `image \| video \| audio \| mesh \| splat \| text`                          |
+| model              | text        | catalog slug                                                                |
+| modality           | text        |                                                                             |
+| provider           | text        | upstream actually used                                                      |
+| source             | text        | `api \| dashboard \| mcp` (also rolled up as `all`)                         |
+| jobs_total         | bigint      |                                                                             |
+| jobs_succeeded     | bigint      |                                                                             |
+| jobs_failed        | bigint      |                                                                             |
+| output_units       | numeric     | unit depends on media: seconds, images, tokens…                             |
+| tokens_in          | bigint      | LLM only                                                                    |
+| tokens_out         | bigint      | LLM only                                                                    |
+| distinct_accounts  | int         | PRIVATE — powers the K-anonymity gate, never exposed                        |
+| spend_micros       | bigint      | PRIVATE — internal analytics only                                           |
+| p50_latency_ms     | int         | queue→terminal; interesting public stat                                     |
+| created_at         | timestamptz |                                                                             |
 |                    |             | UNIQUE (grain, period_start, media_type, model, modality, provider, source) |
 
 Tiny forever: even 500 models × ~50 dimension combos × 8,760 hours/year is a few million

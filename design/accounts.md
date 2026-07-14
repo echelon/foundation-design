@@ -37,6 +37,7 @@ table is provider-agnostic).
 
 | column                  | type        | null? | notes                                    |
 | ----------------------- | ----------- | ----- | ---------------------------------------- |
+| sequence_id             | bigint      | no    | identity; never exposed (ids.md §4)      |
 | id                      | text PK     | no    | `acct_...`                               |
 | name                    | text        | no    | display name                             |
 | billing_email           | text        | yes   | falls back to the admin's email          |
@@ -66,19 +67,20 @@ table is provider-agnostic).
 
 ### users  (`user_`)
 
-| column            | type        | null? | notes                                          |
-| ----------------- | ----------- | ----- | ----------------------------------------------- |
-| id                | text PK     | no    | `user_...`                                      |
-| email             | text UNIQUE | no    | **canonicalized** (trim + lowercase); the login/collision key |
+| column            | type        | null? | notes                                                                                                   |
+| ----------------- | ----------- | ----- | ------------------------------------------------------------------------------------------------------- |
+| sequence_id       | bigint      | no    | identity; never exposed (ids.md §4)                                                                     |
+| id                | text PK     | no    | `user_...`                                                                                              |
+| email             | text UNIQUE | no    | **canonicalized** (trim + lowercase); the login/collision key                                           |
 | email_original    | text        | no    | exactly as the user typed it (or as the SSO provider reported it); **non-unique**, display/support only |
-| email_verified_at | timestamptz | yes   | set by verification OR by trusted SSO           |
-| password_hash     | text        | yes   | **null for SSO-only users**; argon2id when set  |
-| display_name      | text        | yes   |                                                 |
-| avatar_url        | text        | yes   | from SSO profile when available                 |
-| totp_secret       | text        | yes   | encrypted at rest (true MFA, later)             |
-| created_at        | timestamptz | no    |                                                 |
-| updated_at        | timestamptz | no    |                                                 |
-| deleted_at        | timestamptz | yes   | soft delete                                     |
+| email_verified_at | timestamptz | yes   | set by verification OR by trusted SSO                                                                   |
+| password_hash     | text        | yes   | **null for SSO-only users**; argon2id when set                                                          |
+| display_name      | text        | yes   |                                                                                                         |
+| avatar_url        | text        | yes   | from SSO profile when available                                                                         |
+| totp_secret       | text        | yes   | encrypted at rest (true MFA, later)                                                                     |
+| created_at        | timestamptz | no    |                                                                                                         |
+| updated_at        | timestamptz | no    |                                                                                                         |
+| deleted_at        | timestamptz | yes   | soft delete                                                                                             |
 
 Canonicalization is conservative: trim whitespace + Unicode-lowercase, nothing else. No
 dot-stripping or plus-tag-stripping — those are provider-specific ownership semantics we
@@ -87,18 +89,19 @@ we show back and what support sees.
 
 ### user_sso_connections  (`sso_`) — SSO links (renamed from `user_identities`, 2026-07-14)
 
-| column            | type        | null? | notes                                          |
-| ----------------- | ----------- | ----- | ----------------------------------------------- |
-| id                | text PK     | no    | `sso_...`                                       |
-| user_id           | text FK     | no    | → users                                         |
-| provider          | text        | no    | `google \| github`                              |
+| column            | type        | null? | notes                                                               |
+| ----------------- | ----------- | ----- | ------------------------------------------------------------------- |
+| sequence_id       | bigint      | no    | identity; never exposed (ids.md §4)                                 |
+| id                | text PK     | no    | `sso_...`                                                           |
+| user_id           | text FK     | no    | → users                                                             |
+| provider          | text        | no    | `google \| github`                                                  |
 | provider_user_id  | text        | no    | Google `sub` / GitHub numeric id — the STABLE key (never the email) |
-| provider_email    | text        | no    | email as reported by the provider at link time  |
-| provider_login    | text        | yes   | GitHub username etc., display only              |
-| created_at        | timestamptz | no    |                                                 |
-| last_used_at      | timestamptz | no    | set at link, touched on each login              |
-|                   |             |       | UNIQUE (provider, provider_user_id)             |
-|                   |             |       | UNIQUE (user_id, provider) — one connection per provider per user |
+| provider_email    | text        | no    | email as reported by the provider at link time                      |
+| provider_login    | text        | yes   | GitHub username etc., display only                                  |
+| created_at        | timestamptz | no    |                                                                     |
+| last_used_at      | timestamptz | no    | set at link, touched on each login                                  |
+|                   |             |       | UNIQUE (provider, provider_user_id)                                 |
+|                   |             |       | UNIQUE (user_id, provider) — one connection per provider per user   |
 
 Naming: "identity" is too large a word for what this is — a link to an external login
 provider. Considered `user_sso_identities`, `oauth_accounts`, `external_logins`,
@@ -110,47 +113,50 @@ email scopes), not to act on the user's behalf. Nothing to leak.
 
 ### account_members  (`mem_`)
 
-| column      | type        | null? | notes                              |
-| ----------- | ----------- | ----- | ---------------------------------- |
-| id          | text PK     | no    | `mem_...`                          |
-| account_id  | text FK     | no    | → accounts                         |
-| user_id     | text FK     | no    | → users                            |
-| role        | text        | no    | `admin \| member`                  |
-| created_at  | timestamptz | no    |                                    |
-|             |             |       | UNIQUE (account_id, user_id)       |
+| column      | type        | null? | notes                               |
+| ----------- | ----------- | ----- | ----------------------------------- |
+| sequence_id | bigint      | no    | identity; never exposed (ids.md §4) |
+| id          | text PK     | no    | `mem_...`                           |
+| account_id  | text FK     | no    | → accounts                          |
+| user_id     | text FK     | no    | → users                             |
+| role        | text        | no    | `admin \| member`                   |
+| created_at  | timestamptz | no    |                                     |
+|             |             |       | UNIQUE (account_id, user_id)        |
 
 ### invitations  (`inv_`) — now supports code AND magic link
 
-| column              | type        | null? | notes                                              |
+| column              | type        | null? | notes                                               |
 | ------------------- | ----------- | ----- | --------------------------------------------------- |
-| id                  | text PK     | no    | `inv_...`                                            |
-| account_id          | text FK     | no    | → accounts                                           |
-| email               | text        | no    | invitee (invite is bound to this email)              |
-| role                | text        | no    | `admin \| member`                                    |
-| code                | text UNIQUE | no    | short human-typeable code (e.g. `7F3K-QT9M`)         |
-| token_hash          | text        | no    | sha256 of the magic-link token (long, unguessable)   |
-| invited_by_user_id  | text FK     | no    | → users                                              |
-| accepted_by_user_id | text FK     | yes   | → users                                              |
-| created_at          | timestamptz | no    |                                                      |
-| expires_at          | timestamptz | no    | default 7 days                                       |
-| accepted_at         | timestamptz | yes   | null until accepted                                  |
-| revoked_at          | timestamptz | yes   |                                                      |
+| sequence_id         | bigint      | no    | identity; never exposed (ids.md §4)                 |
+| id                  | text PK     | no    | `inv_...`                                           |
+| account_id          | text FK     | no    | → accounts                                          |
+| email               | text        | no    | invitee (invite is bound to this email)             |
+| role                | text        | no    | `admin \| member`                                   |
+| code                | text UNIQUE | no    | short human-typeable code (e.g. `7F3K-QT9M`)        |
+| token_hash          | text        | no    | sha256 of the magic-link token (long, unguessable)  |
+| invited_by_user_id  | text FK     | no    | → users                                             |
+| accepted_by_user_id | text FK     | yes   | → users                                             |
+| created_at          | timestamptz | no    |                                                     |
+| expires_at          | timestamptz | no    | default 7 days                                      |
+| accepted_at         | timestamptz | yes   | null until accepted                                 |
+| revoked_at          | timestamptz | yes   |                                                     |
 
 Code and link are two doors to the same invitation: the email contains the magic link; the
 console shows the code for copy/paste into "join with code."
 
 ### sessions  (`sess_`)
 
-| column      | type        | null? | notes                          |
-| ----------- | ----------- | ----- | ------------------------------ |
-| id          | text PK     | no    | `sess_...`                     |
-| user_id     | text FK     | no    | → users                        |
-| token_hash  | text        | no    | sha256 of cookie value         |
-| ip          | inet        | yes   |                                |
-| user_agent  | text        | yes   |                                |
-| created_at  | timestamptz | no    |                                |
-| expires_at  | timestamptz | no    |                                |
-| revoked_at  | timestamptz | yes   |                                |
+| column      | type        | null? | notes                               |
+| ----------- | ----------- | ----- | ----------------------------------- |
+| sequence_id | bigint      | no    | identity; never exposed (ids.md §4) |
+| id          | text PK     | no    | `sess_...`                          |
+| user_id     | text FK     | no    | → users                             |
+| token_hash  | text        | no    | sha256 of cookie value              |
+| ip          | inet        | yes   |                                     |
+| user_agent  | text        | yes   |                                     |
+| created_at  | timestamptz | no    |                                     |
+| expires_at  | timestamptz | no    |                                     |
+| revoked_at  | timestamptz | yes   |                                     |
 
 Sessions are read on every console request, so they **can/will be Redis-cached** (the
 session-cache slot already reserved in `architecture.md` §1): keyed by token hash, TTL from
@@ -159,8 +165,9 @@ is a read-through.
 
 ### api_keys  (`key_`; secret `foundation_api_...`, shown once)
 
-| column              | type        | null? | notes                                        |
+| column              | type        | null? | notes                                         |
 | ------------------- | ----------- | ----- | --------------------------------------------- |
+| sequence_id         | bigint      | no    | identity; never exposed (ids.md §4)           |
 | id                  | text PK     | no    | `key_...`                                     |
 | account_id          | text FK     | no    | → accounts                                    |
 | created_by_user_id  | text FK     | no    | → users                                       |
@@ -175,28 +182,30 @@ is a read-through.
 
 ### email_verifications  (`emailver_`)
 
-| column      | type        | null? | notes                            |
-| ----------- | ----------- | ----- | -------------------------------- |
-| id          | text PK     | no    | `emailver_...`                   |
-| user_id     | text FK     | no    | → users                          |
-| token_hash  | text        | no    | sha256 of emailed token          |
-| created_at  | timestamptz | no    |                                  |
-| expires_at  | timestamptz | no    |                                  |
-| used_at     | timestamptz | yes   |                                  |
+| column      | type        | null? | notes                               |
+| ----------- | ----------- | ----- | ----------------------------------- |
+| sequence_id | bigint      | no    | identity; never exposed (ids.md §4) |
+| id          | text PK     | no    | `emailver_...`                      |
+| user_id     | text FK     | no    | → users                             |
+| token_hash  | text        | no    | sha256 of emailed token             |
+| created_at  | timestamptz | no    |                                     |
+| expires_at  | timestamptz | no    |                                     |
+| used_at     | timestamptz | yes   |                                     |
 
 Dormant at launch (no verification requirement yet); the table exists so enabling
 verification later is a feature flag, not a migration.
 
 ### password_resets  (`pwreset_`)
 
-| column      | type        | null? | notes                            |
-| ----------- | ----------- | ----- | -------------------------------- |
-| id          | text PK     | no    | `pwreset_...`                    |
-| user_id     | text FK     | no    | → users                          |
-| token_hash  | text        | no    | sha256 of emailed token          |
-| created_at  | timestamptz | no    |                                  |
-| expires_at  | timestamptz | no    | short (~1h)                      |
-| used_at     | timestamptz | yes   | single-use                       |
+| column      | type        | null? | notes                               |
+| ----------- | ----------- | ----- | ----------------------------------- |
+| sequence_id | bigint      | no    | identity; never exposed (ids.md §4) |
+| id          | text PK     | no    | `pwreset_...`                       |
+| user_id     | text FK     | no    | → users                             |
+| token_hash  | text        | no    | sha256 of emailed token             |
+| created_at  | timestamptz | no    |                                     |
+| expires_at  | timestamptz | no    | short (~1h)                         |
+| used_at     | timestamptz | yes   | single-use                          |
 
 Live at launch (password reset works day one). Reset consumption revokes all existing
 sessions for the user.

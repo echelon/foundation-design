@@ -6,7 +6,8 @@
 
 **Status:** living document (2026-07-05). Every endpoint served by `api-server`.
 Base URL placeholder: `https://api.example.dev`. Siblings: `architecture.md`, `schema.md`,
-`models.md`, `enums.md`, `logging.md`, `mcp.md`, `end-users.md`, `rankings.md`.
+`models.md`, `enums.md`, `logging.md`, `mcp.md`, `end-users.md`, `rankings.md` — and the
+generation planes: `api_all.md`, `api_model_specific.md`, `apis_llm.md`.
 
 ---
 
@@ -91,35 +92,31 @@ One envelope for every non-2xx response:
 Every failure code maps to refund behavior (all of the above refund in full except `canceled`
 after dispatch, which is policy TBD per provider — most upstreams charge us anyway).
 
-## 3. Generation — three shapes × two verbs
+## 3. Generation — shared conventions; the planes live in their own docs
 
 **Sign-off:** _unsigned_
 
-Every generate endpoint has a **cost twin** with the identical request body. `POST /v1/cost/...`
+Every generate endpoint has a **cost twin** with the identical request body (`.../cost`), which
 returns the exact fixed price the matching generate call would charge — same validation, same
 coercion, no job, no charge. (Media prices are deterministic at submission and never change
 after enqueue.)
 
-Shape 3 (model-as-parameter, superset schema) is branded the **Any API** — DECIDED
-2026-07-05, replacing "omni" everywhere (analysis: `../reports/omni-api-naming.md`).
+**The shapes moved to their own docs (2026-07-14), each with its own path namespace:**
 
-| Shape                | Generate                                       | Cost                                       |
-| -------------------- | ---------------------------------------------- | ------------------------------------------ |
-| Any (per media)      | `POST /v1/generate/video`                      | `POST /v1/cost/video`                      |
-|                      | `POST /v1/generate/image`                      | `POST /v1/cost/image`                      |
-|                      | `POST /v1/generate/audio`                      | `POST /v1/cost/audio`                      |
-|                      | `POST /v1/generate/mesh`                       | `POST /v1/cost/mesh`                       |
-|                      | `POST /v1/generate/splat`                      | `POST /v1/cost/splat`                      |
-| Unified (per model)  | `POST /v1/generate/models/{model}`             | `POST /v1/cost/models/{model}`             |
-| Granular             | `POST /v1/generate/models/{model}/{modality}`  | `POST /v1/cost/models/{model}/{modality}`  |
+| Plane              | Namespace                             | Doc                     |
+| ------------------ | ------------------------------------- | ------------------------ |
+| Any ("all"-shaped) | `/v1/any/{media_type}` (+ `/cost`)    | `api_all.md`             |
+| Unified + Granular | `/v1/models/{model}/generate[...]` (+ `/cost[...]`) | `api_model_specific.md`  |
+| Chat (OpenAI-compat)| `/v1/chat/completions`               | `apis_llm.md`            |
 
-- Any body: `{ "model": "kling_video_v3_pro", ...superset params... }` — irrelevant params
-  pruned/coerced; adjustments reported in the response and job record.
-- Unified body: model's own param union; modality inferred from present params, echoed back as
-  `resolved_modality`.
-- Granular body: exactly that (model, modality)'s schema.
-- All three produce the same Job resource; results arrive by polling or webhook — never a
-  held-open generate call.
+(The previous `/v1/generate/*` + `/v1/cost/*` paths are retired; alternatives-considered
+tables live in the plane docs. Any branding: DECIDED 2026-07-05, replacing "omni" —
+`../reports/read/omni-api-naming.md`.)
+
+Shared across every plane:
+
+- All planes produce the same Job resource with `api_shape` recording the door used. Media
+  is always async (polling or webhook — never held-open); text/chat is synchronous.
 - Optional on every shape: `"end_user": "<customer's own user id, ≤256 chars>"` — never
   required; see `end-users.md`.
 
@@ -169,13 +166,9 @@ primitive; every generate call in §3 (and every LLM call in §5) produces one.
 
 **Sign-off:** _unsigned_
 
-| Endpoint                  | Method | Purpose                                                          |
-| ------------------------- | ------ | ---------------------------------------------------------------- |
-| `/v1/chat/completions`    | POST   | OpenAI-compatible; `model` = our slug; SSE via `"stream": true`; optional `end_user` (maps onto OpenAI's `user` field convention) |
-
-Synchronous pass-through (no job queue); still writes a job row + request/provider logs for
-spend history and debugging. Admission-checked against balance using `max_tokens` estimate;
-actuals charged at completion.
+**Moved to `apis_llm.md` (2026-07-14):** the OpenAI-compatible `/v1/chat/completions` plane —
+param pass-through rules, response deltas (job ID as completion `id`), streaming, metered
+billing, and the reserved LLM paths.
 
 ## 6. Catalog (read-only; served from the code catalog)
 

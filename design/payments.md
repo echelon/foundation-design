@@ -37,55 +37,60 @@ product copy (ledger entry types like `promo` are internal terms).
 
 ### stripe_customers  (`cust_`)
 
-| column              | type        | notes                     |
-| ------------------- | ----------- | ------------------------- |
-| id                  | text PK     | `cust_...`                |
-| account_id          | text FK     | UNIQUE → accounts         |
-| stripe_customer_id  | text UNIQUE | `cus_...` at Stripe       |
-| created_at          | timestamptz |                           |
+| column              | type        | notes                               |
+| ------------------- | ----------- | ----------------------------------- |
+| sequence_id         | bigint      | identity; never exposed (ids.md §4) |
+| id                  | text PK     | `cust_...`                          |
+| account_id          | text FK     | UNIQUE → accounts                   |
+| stripe_customer_id  | text UNIQUE | `cus_...` at Stripe                 |
+| created_at          | timestamptz |                                     |
 
 ### payment_methods  (`pm_`)
 
-| column                    | type        | notes                        |
-| ------------------------- | ----------- | ---------------------------- |
-| id                        | text PK     | `pm_...` (ours)              |
-| account_id                | text FK     | → accounts                   |
-| stripe_payment_method_id  | text        | theirs                       |
-| brand                     | text        | `visa`, …                    |
-| last4                     | text        |                              |
-| exp_month                 | int         |                              |
-| exp_year                  | int         |                              |
-| is_default                | bool        |                              |
-| status                    | text        | `active \| detached`         |
-| created_at                | timestamptz |                              |
+| column                    | type        | notes                               |
+| ------------------------- | ----------- | ----------------------------------- |
+| sequence_id               | bigint      | identity; never exposed (ids.md §4) |
+| id                        | text PK     | `pm_...` (ours)                     |
+| account_id                | text FK     | → accounts                          |
+| stripe_payment_method_id  | text        | theirs                              |
+| brand                     | text        | `visa`, …                           |
+| last4                     | text        |                                     |
+| exp_month                 | int         |                                     |
+| exp_year                  | int         |                                     |
+| is_default                | bool        |                                     |
+| status                    | text        | `active \| detached`                |
+| created_at                | timestamptz |                                     |
 
 ### ledger_entries  (`txn_`) — APPEND-ONLY
 
-| column                    | type        | notes                                                |
-| ------------------------- | ----------- | ---------------------------------------------------- |
-| id                        | text PK     | `txn_...`                                             |
-| account_id                | text FK     | → accounts                                            |
-| amount_micros             | bigint      | signed: + credit, − debit                             |
+| column                    | type        | notes                                                                                                          |
+| ------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------- |
+| sequence_id               | bigint      | identity; never exposed (ids.md §4)                                                                            |
+| id                        | text PK     | `txn_...`                                                                                                      |
+| account_id                | text FK     | → accounts                                                                                                     |
+| amount_micros             | bigint      | signed: + credit, − debit                                                                                      |
 | entry_type                | text        | `topup \| job_charge \| job_refund \| adjustment \| promo \| auto_refill \| chargeback \| chargeback_reversal` |
-| job_id                    | text FK     | → jobs; null for non-job entries                      |
-| stripe_payment_intent_id  | text        | null; topups/auto-refills/chargebacks                 |
-| balance_after_micros      | bigint      | written under the balance row lock                    |
-| memo                      | text        | null                                                  |
-| idempotency_key           | text        | UNIQUE, null (e.g. `topup:{checkout_session_id}`)     |
-| created_at                | timestamptz |                                                       |
+| job_id                    | text FK     | → jobs; null for non-job entries                                                                               |
+| stripe_payment_intent_id  | text        | null; topups/auto-refills/chargebacks                                                                          |
+| balance_after_micros      | bigint      | written under the balance row lock                                                                             |
+| memo                      | text        | null                                                                                                           |
+| idempotency_key           | text        | UNIQUE, null (e.g. `topup:{checkout_session_id}`)                                                              |
+| created_at                | timestamptz |                                                                                                                |
 
 ### account_balances
 
-| column          | type        | notes                                                  |
-| --------------- | ----------- | ------------------------------------------------------- |
-| account_id      | text PK/FK  | → accounts                                               |
+| column          | type        | notes                                                        |
+| --------------- | ----------- | ------------------------------------------------------------ |
+| sequence_id     | bigint      | identity; never exposed (ids.md §4)                          |
+| account_id      | text PK/FK  | → accounts                                                   |
 | balance_micros  | bigint      | cache; mutated only with a ledger insert, under `FOR UPDATE` |
-| updated_at      | timestamptz |                                                          |
+| updated_at      | timestamptz |                                                              |
 
 ### auto_refill_rules  (`refill_`)
 
-| column               | type        | notes                                       |
+| column               | type        | notes                                        |
 | -------------------- | ----------- | -------------------------------------------- |
+| sequence_id          | bigint      | identity; never exposed (ids.md §4)          |
 | id                   | text PK     | `refill_...`                                 |
 | account_id           | text FK     | UNIQUE → accounts (one rule)                 |
 | enabled              | bool        |                                              |
@@ -100,28 +105,30 @@ product copy (ledger entry types like `promo` are internal terms).
 
 ### spend_limits  (`limit_`)
 
-| column        | type        | notes                                |
-| ------------- | ----------- | ------------------------------------ |
-| id                  | text PK     | `limit_...`                          |
-| account_id          | text FK     | → accounts                           |
-| window              | text        | `weekly \| monthly`                  |
-| limit_micros        | bigint      |                                      |
-| behavior            | text        | `block`                              |
-| created_by_user_id  | text FK     | → users                              |
-| created_at          | timestamptz |                                      |
-| updated_at          | timestamptz |                                      |
+| column             | type        | notes                                |
+| ------------------ | ----------- | ------------------------------------ |
+| sequence_id        | bigint      | identity; never exposed (ids.md §4)  |
+| id                 | text PK     | `limit_...`                          |
+| account_id         | text FK     | → accounts                           |
+| window             | text        | `weekly \| monthly`                  |
+| limit_micros       | bigint      |                                      |
+| behavior           | text        | `block`                              |
+| created_by_user_id | text FK     | → users                              |
+| created_at         | timestamptz |                                      |
+| updated_at         | timestamptz |                                      |
 
 ### stripe_events  (`sevt_`)
 
-| column           | type        | notes                        |
-| ---------------- | ----------- | ---------------------------- |
-| id               | text PK     | `sevt_...`                   |
-| stripe_event_id  | text UNIQUE | dedupe                       |
-| event_type       | text        |                              |
-| payload          | jsonb       |                              |
-| created_at       | timestamptz |                              |
-| processed_at     | timestamptz | null until handled           |
-| error            | text        | null                         |
+| column           | type        | notes                               |
+| ---------------- | ----------- | ----------------------------------- |
+| sequence_id      | bigint      | identity; never exposed (ids.md §4) |
+| id               | text PK     | `sevt_...`                          |
+| stripe_event_id  | text UNIQUE | dedupe                              |
+| event_type       | text        |                                     |
+| payload          | jsonb       |                                     |
+| created_at       | timestamptz |                                     |
+| processed_at     | timestamptz | null until handled                  |
+| error            | text        | null                                |
 
 ## 3. Funding the balance: Stripe Checkout sessions
 

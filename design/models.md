@@ -242,7 +242,7 @@ media type, split by task modalities (§11) plus a **lifecycle** axis:
 
 - Catalog entries carry `lifecycle: sync | async_job | session`. `session` models (realtime
   TTS/STT, S2S dialogue, Lyria RealTime — websocket-native) are **listed in the catalog but
-  not invocable via `/v1/generate`**; docs point to the future realtime plane
+  not invocable via the generation planes (`api_all.md` etc.)**; docs point to the future realtime plane
   (`future-roadmap.md` §2). In the table below: `elevenlabs_scribe_v2_realtime` and
   `deepgram_flux` are `session`.
 - **VOICE is a future platform resource** (`voice_` prefix; designed / instant clone /

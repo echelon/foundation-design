@@ -52,30 +52,31 @@ Monthly `PARTITION BY RANGE (created_at)`; minimal indexes: (account_id, created
 
 ### request_logs  (`rlog_`)
 
-| column               | type        | notes                                   |
-| -------------------- | ----------- | ---------------------------------------- |
-| id                   | text PK     | `rlog_...`                               |
-| account_id           | text FK     | → accounts                               |
-| api_key_id           | text FK     | → api_keys; null when cookie-authed      |
+| column               | type        | notes                                                                                          |
+| -------------------- | ----------- | ---------------------------------------------------------------------------------------------- |
+| sequence_id          | bigint      | identity; never exposed (ids.md §4)                                                            |
+| id                   | text PK     | `rlog_...`                                                                                     |
+| account_id           | text FK     | → accounts                                                                                     |
+| api_key_id           | text FK     | → api_keys; null when cookie-authed                                                            |
 | session_id           | text FK     | → sessions; set for dashboard/console requests (exactly one of api_key_id / session_id is set) |
-| job_id               | text FK     | → jobs; see note below                   |
-| end_user_id          | text FK     | → end_users; null                        |
-| source               | text        | `api \| dashboard \| mcp`                |
-| method               | text        |                                          |
-| path                 | text        |                                          |
-| api_version          | date        |                                          |
-| ip                   | inet        |                                          |
-| user_agent           | text        |                                          |
-| request_headers      | jsonb       | allowlisted only                         |
-| request_body         | jsonb       | redacted                                 |
-| request_truncated    | bool        | `is_truncated` for the request body      |
-| request_body_bytes   | bigint      | original size pre-truncation             |
-| response_status      | int         |                                          |
-| response_body        | jsonb       | redacted                                 |
-| response_truncated   | bool        |                                          |
-| response_body_bytes  | bigint      |                                          |
-| latency_ms           | int         |                                          |
-| created_at           | timestamptz | partition key                            |
+| job_id               | text FK     | → jobs; see note below                                                                         |
+| end_user_id          | text FK     | → end_users; null                                                                              |
+| source               | text        | `api \| dashboard \| mcp`                                                                      |
+| method               | text        |                                                                                                |
+| path                 | text        |                                                                                                |
+| api_version          | date        |                                                                                                |
+| ip                   | inet        |                                                                                                |
+| user_agent           | text        |                                                                                                |
+| request_headers      | jsonb       | allowlisted only                                                                               |
+| request_body         | jsonb       | redacted                                                                                       |
+| request_truncated    | bool        | `is_truncated` for the request body                                                            |
+| request_body_bytes   | bigint      | original size pre-truncation                                                                   |
+| response_status      | int         |                                                                                                |
+| response_body        | jsonb       | redacted                                                                                       |
+| response_truncated   | bool        |                                                                                                |
+| response_body_bytes  | bigint      |                                                                                                |
+| latency_ms           | int         |                                                                                                |
+| created_at           | timestamptz | partition key                                                                                  |
 
 **Why `job_id` is nullable (clarified 2026-07-05):** `request_logs` records EVERY API
 request, not just generations — `GET /v1/jobs`, key management, balance checks, auth, catalog
@@ -87,28 +88,30 @@ identical job pipeline (same billing, same statuses); they differ only in auth, 
 
 ### provider_calls  (`pcall_`)
 
-| column               | type        | notes                                                    |
-| -------------------- | ----------- | --------------------------------------------------------- |
-| id                   | text PK     | `pcall_...`                                                |
-| job_id               | text FK     | → jobs                                                     |
-| provider             | text        | catalog slug                                               |
+| column               | type        | notes                                                                 |
+| -------------------- | ----------- | --------------------------------------------------------------------- |
+| sequence_id          | bigint      | identity; never exposed (ids.md §4)                                   |
+| id                   | text PK     | `pcall_...`                                                           |
+| job_id               | text FK     | → jobs                                                                |
+| provider             | text        | catalog slug                                                          |
 | direction            | text        | `request \| response \| poll_request \| poll_response \| callback_in` |
-| url                  | text        |                                                            |
-| request_headers      | jsonb       | our provider keys stripped                                 |
-| request_body         | jsonb       |                                                            |
-| request_truncated    | bool        |                                                            |
-| request_body_bytes   | bigint      |                                                            |
-| response_status      | int         | null                                                       |
-| response_body        | jsonb       |                                                            |
-| response_truncated   | bool        |                                                            |
-| response_body_bytes  | bigint      |                                                            |
-| latency_ms           | int         | null                                                       |
-| created_at           | timestamptz | partition key                                              |
+| url                  | text        |                                                                       |
+| request_headers      | jsonb       | our provider keys stripped                                            |
+| request_body         | jsonb       |                                                                       |
+| request_truncated    | bool        |                                                                       |
+| request_body_bytes   | bigint      |                                                                       |
+| response_status      | int         | null                                                                  |
+| response_body        | jsonb       |                                                                       |
+| response_truncated   | bool        |                                                                       |
+| response_body_bytes  | bigint      |                                                                       |
+| latency_ms           | int         | null                                                                  |
+| created_at           | timestamptz | partition key                                                         |
 
 ### webhook_deliveries  (`whd_`)
 
-| column           | type        | notes                              |
+| column           | type        | notes                               |
 | ---------------- | ----------- | ----------------------------------- |
+| sequence_id      | bigint      | identity; never exposed (ids.md §4) |
 | id               | text PK     | `whd_...`                           |
 | job_id           | text FK     | → jobs                              |
 | account_id       | text FK     | → accounts                          |
