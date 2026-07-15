@@ -13,10 +13,10 @@ table is provider-agnostic).
 
 ## 1. Model overview
 
-**Sign-off:** _unsigned_
+**Sign-off:** bt 2026-07-14
 
 - A **user** is a human with 1+ **login methods**: an email/password credential and/or
-  linked SSO connections (Google, GitHub). Password is optional (SSO-only users exist).
+  linked SSO connections (Google, GitHub). Password is optional (SSO-only users exist). 
 - An **account** is the billing/team entity. Sign-up creates user + account with that user as
   admin. All resources hang off `account_id`.
 - **`user_id` is the join key across login methods** — `user_sso_connections`,
@@ -31,7 +31,7 @@ table is provider-agnostic).
 
 ## 2. Tables
 
-**Sign-off:** _unsigned_
+**Sign-off:** bt 2026-07-14
 
 ### accounts  (`acct_`)
 
@@ -41,7 +41,7 @@ table is provider-agnostic).
 | ---------------------- | ----------- | ----- | -------------------------------------- |
 | sid                    | bigint      | no    | identity; never exposed (ids.md §4)    |
 | id                     | text PK     | no    | `acct_...`                             |
-| name                   | text        | no    | display name                           |
+| name                   | text        | yes   | display name                           |
 | billing_email          | text        | yes   | falls back to the admin's email        |
 | billing_phone          | text        | yes   | optional; stored as entered            |
 | billing_address_line_1 | text        | yes   | optional                               |
@@ -69,7 +69,7 @@ table is provider-agnostic).
 
 ### users  (`user_`)
 
-**Sign-off:** _unsigned_
+**Sign-off:** bt 2026-07-14
 
 | column            | type        | null? | notes                                                                                                   |
 | ----------------- | ----------- | ----- | ------------------------------------------------------------------------------------------------------- |
@@ -93,7 +93,7 @@ we show back and what support sees.
 
 ### user_sso_connections  (`sso_`) — SSO links (renamed from `user_identities`, 2026-07-14)
 
-**Sign-off:** _unsigned_
+**Sign-off:** bt 2026-07-14
 
 | column           | type        | null? | notes                                                               |
 | ---------------- | ----------- | ----- | ------------------------------------------------------------------- |
@@ -119,7 +119,7 @@ email scopes), not to act on the user's behalf. Nothing to leak.
 
 ### account_members  (`mem_`)
 
-**Sign-off:** _unsigned_
+**Sign-off:** bt 2026-07-14
 
 | column     | type        | null? | notes                               |
 | ---------- | ----------- | ----- | ----------------------------------- |
@@ -133,7 +133,7 @@ email scopes), not to act on the user's behalf. Nothing to leak.
 
 ### invitations  (`inv_`) — now supports code AND magic link
 
-**Sign-off:** _unsigned_
+**Sign-off:** bt 2026-07-14
 
 | column              | type        | null? | notes                                              |
 | ------------------- | ----------- | ----- | -------------------------------------------------- |
@@ -156,7 +156,7 @@ console shows the code for copy/paste into "join with code."
 
 ### sessions  (`sess_`)
 
-**Sign-off:** _unsigned_
+**Sign-off:** bt 2026-07-14
 
 | column     | type        | null? | notes                               |
 | ---------- | ----------- | ----- | ----------------------------------- |
@@ -177,7 +177,7 @@ is a read-through.
 
 ### api_keys  (`key_`; secret currently `foundation_api_...`, shown once)
 
-**Sign-off:** _unsigned_
+**Sign-off:** bt 2026-07-14
 
 | column             | type        | null? | notes                                                           |
 | ------------------ | ----------- | ----- | --------------------------------------------------------------- |
@@ -205,7 +205,7 @@ console displays old keys truthfully after a rename. Same mechanism covers
 
 ### email_verifications  (`emailver_`)
 
-**Sign-off:** _unsigned_
+**Sign-off:** bt 2026-07-14
 
 | column     | type        | null? | notes                               |
 | ---------- | ----------- | ----- | ----------------------------------- |
@@ -222,7 +222,7 @@ verification later is a feature flag, not a migration.
 
 ### password_resets  (`pwreset_`)
 
-**Sign-off:** _unsigned_
+**Sign-off:** bt 2026-07-14
 
 | column     | type        | null? | notes                               |
 | ---------- | ----------- | ----- | ----------------------------------- |
@@ -239,10 +239,10 @@ sessions for the user.
 
 ## 3. Initial signup flows
 
-**Sign-off:** _unsigned_
+**Sign-off:** bt 2026-07-14
 
 All three converge on the same final step: create `users` row → create `accounts` row →
-create `account_members(admin)` → create session → land in console onboarding.
+create `account_members(owner)` → create session → land in console onboarding.
 
 **That final step is one database transaction.** User, account, membership, and session rows
 (plus the `user_sso_connections` row for SSO signups) commit atomically; any failure rolls back
@@ -278,7 +278,7 @@ as `provider_user_id` (logins are mutable); pick the primary **verified** email 
 
 ## 4. Invite signup flows
 
-**Sign-off:** _unsigned_
+**Sign-off:** bt 2026-07-14
 
 Entry: magic link (`/join?token=...`) or code entry (`/join` + `7F3K-QT9M`). Both resolve the
 invitation (valid, unexpired, unrevoked), then branch on the visitor's state:
@@ -301,7 +301,7 @@ console gets an account switcher from day one.
 
 ## 5. Adding login methods (linking)
 
-**Sign-off:** _unsigned_
+**Sign-off:** bt 2026-07-14
 
 All linking happens **while authenticated**, from console → Security settings. The three
 flows you listed:
@@ -336,7 +336,7 @@ with an existing method first, then link.
 
 ## 6. API endpoints (delta to api.md §9)
 
-**Sign-off:** _unsigned_
+**Sign-off:** bt 2026-07-14
 
 | Endpoint                             | Method | Purpose                                                    |
 | ------------------------------------ | ------ | ---------------------------------------------------------- |
