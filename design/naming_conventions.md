@@ -42,7 +42,7 @@ snake_case (`job_completed`).
 | Functions/vars/mods   | `snake_case`; module file name mirrors the item it holds (`task_status.rs` → `TaskStatus`)                                                                                             |
 | Constants             | `SCREAMING_SNAKE_CASE`, declared at top of file after imports                                                                                                                          |
 | Library crates        | `snake_case` (ArtCraft: `grok_api_client`, `mysql_queries`)                                                                                                                            |
-| Binary/CLI crates     | `kebab-case` (ArtCraft: `db-backfill`; here: `api-server`, `worker`, `admin-cli`)                                                                                                      |
+| Binary/CLI crates     | `kebab-case` (ArtCraft: `db-backfill`; here: `api-gateway`, `dashboard-gateway`, `worker`, `admin-cli`)                                                                                |
 | ID newtypes           | `{Entity}Id` (`JobId`, `AccountId`) — DIVERGES from ArtCraft's `{Entity}Token`; this project says "id" everywhere (`crates/core/ids`), so the types do too                             |
 | Money newtypes        | Unit-bearing names: `Micros`, `NanoUsd` (`crates/core/money`)                                                                                                                          |
 | Constructors          | `new`, `new_from_str`                                                                                                                                                                  |

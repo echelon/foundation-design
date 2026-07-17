@@ -7,18 +7,24 @@
 **Status:** living document (2026-07-05). Peeled from `schema.md` §1; this doc now owns all
 account/login tables plus the signup, invite, and SSO-linking flows. SSO providers:
 **Google and GitHub** (ideal pair; more can be added later — the `user_sso_connections`
-table is provider-agnostic).
+table is provider-agnostic). Session-token design, login mechanics, and the authorization
+model: **`auth.md`**. Audit trails: **`audit_logs.md`**.
 
 ---
 
 ## 1. Model overview
 
-**Sign-off:** bt 2026-07-14
+**Sign-off:** _unsigned_
 
 - A **user** is a human with 1+ **login methods**: an email/password credential and/or
-  linked SSO connections (Google, GitHub). Password is optional (SSO-only users exist). 
-- An **account** is the billing/team entity. Sign-up creates user + account with that user as
-  admin. All resources hang off `account_id`.
+  linked SSO connections (Google, GitHub). Password is optional (SSO-only users exist).
+- An **account** is the billing/team entity. All resources hang off `account_id`.
+- **A user belongs to zero or more accounts**, with a role per membership (`owner, admin,
+  member` — permissions differ per account; matrix in `auth.md` §4). The console puts the
+  account id in the URL, Stripe-style (`/{acct_id}/…`), and switching accounts is switching
+  URLs. **Any user can create additional accounts** at any time — sign-up creates user +
+  first account with that user as **owner**, and "New account" from the switcher creates
+  more (creator = owner).
 - **`user_id` is the join key across login methods** — `user_sso_connections`,
   `account_members`, `sessions`, etc. all FK to `users.id`. One user row per human, however many ways they log
   in. Email is **never** a join key or FK: SSO logins resolve on the stable
@@ -31,11 +37,11 @@ table is provider-agnostic).
 
 ## 2. Tables
 
-**Sign-off:** bt 2026-07-14
+**Sign-off:** _unsigned_
 
 ### accounts  (`acct_`)
 
-**Sign-off:** bt 2026-10-14
+**Sign-off:** _unsigned_
 
 | column                 | type        | null? | notes                                  |
 | ---------------------- | ----------- | ----- | -------------------------------------- |
@@ -66,43 +72,103 @@ table is provider-agnostic).
 - Billing address fields are deliberately loose free-text (international formats vary too
   much for strict per-field validation); `billing_country_code` is the only coded field. Stripe
   stays the validator of record where tax/receipts care.
+- **Every change to the billing address/phone/email fields writes a
+  `billing_address_changed` event to the account audit log** (`audit_logs.md` §3), in the
+  same transaction as the update.
 
 ### users  (`user_`)
 
-**Sign-off:** bt 2026-07-14
+**Sign-off:** _unsigned_
 
-| column            | type        | null? | notes                                                                                                   |
-| ----------------- | ----------- | ----- | ------------------------------------------------------------------------------------------------------- |
-| sid               | bigint      | no    | identity; never exposed (ids.md §4)                                                                     |
-| id                | text PK     | no    | `user_...`                                                                                              |
-| email             | text UNIQUE | no    | **canonicalized** (trim + lowercase); the login/collision key                                           |
-| email_original    | text        | no    | exactly as the user typed it (or as the SSO provider reported it); **non-unique**, display/support only |
-| email_verified_at | timestamptz | yes   | set by verification OR by trusted SSO                                                                   |
-| password_hash     | text        | yes   | **null for SSO-only users**; argon2id when set                                                          |
-| display_name      | text        | yes   |                                                                                                         |
-| avatar_url        | text        | yes   | from SSO profile when available                                                                         |
-| totp_secret       | text        | yes   | encrypted at rest (true MFA, later)                                                                     |
-| created_at        | timestamptz | no    |                                                                                                         |
-| updated_at        | timestamptz | no    |                                                                                                         |
-| deleted_at        | timestamptz | yes   | soft delete                                                                                             |
+| column            | type        | null? | notes                                                                                                                                             |
+| ----------------- | ----------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| sid               | bigint      | no    | identity; never exposed (ids.md §4)                                                                                                               |
+| id                | text PK     | no    | `user_...`                                                                                                                                        |
+| email             | text UNIQUE | no    | **canonicalized** (trim + lowercase); the login/collision key                                                                                     |
+| email_original    | text        | no    | exactly as the user typed it (or as the SSO provider reported it); **non-unique**, display/support only                                           |
+| email_clean       | text        | no    | **aggressively canonicalized** (gmail dot/plus stripping etc.); NOT unique, never a login key — abuse/duplicate-detection signal only             |
+| email_verified_at | timestamptz | yes   | set by verification OR by trusted SSO                                                                                                             |
+| password_hash     | text        | yes   | **null for SSO-only users**; argon2id when set                                                                                                    |
+| password_version  | int         | no    | vector clock; **+1 on every password set/change/reset**; embedded in session JWTs (`auth.md` §1) so bulk session invalidation is one integer bump |
+| display_name      | text        | yes   |                                                                                                                                                   |
+| totp_secret       | text        | yes   | encrypted at rest (true MFA, later)                                                                                                               |
+| created_at        | timestamptz | no    |                                                                                                                                                   |
+| updated_at        | timestamptz | no    |                                                                                                                                                   |
+| deleted_at        | timestamptz | yes   | soft delete                                                                                                                                       |
 
-Canonicalization is conservative: trim whitespace + Unicode-lowercase, nothing else. No
-dot-stripping or plus-tag-stripping — those are provider-specific ownership semantics we
-must not guess at. All lookups and uniqueness run against `email`; `email_original` is what
-we show back and what support sees.
+Three email tiers, three jobs: `email` is conservatively canonicalized (trim + Unicode
+lowercase, nothing else) — the ONLY login/uniqueness key. `email_original` is exactly as
+typed — display/support. `email_clean` goes further — provider-aware normalization
+(gmail-style dot removal and `+tag` stripping, etc.); it is deliberately NOT unique and
+never authenticates anything (those transforms are ownership guesses), it exists to catch
+duplicate-account/abuse patterns. All three update together on every email change.
+`avatar_url` DROPPED (2026-07-14) — avatars are now the `user_avatars` table below.
+
+### email_changes  (`emailchg_`) — NEW 2026-07-14
+
+**Sign-off:** _unsigned_
+
+| column     | type        | null? | notes                               |
+| ---------- | ----------- | ----- | ----------------------------------- |
+| sid        | bigint      | no    | identity; never exposed (ids.md §4) |
+| id         | text PK     | no    | `emailchg_...`                      |
+| user_id    | text FK     | no    | → users                             |
+| old_email  | text        | no    | canonicalized; **not unique**       |
+| new_email  | text        | no    | canonicalized; **not unique**       |
+| created_at | timestamptz | no    |                                     |
+
+Every email change, atomically with the `users` update: (1) this row; (2) `email_changed`
+events in the user audit log AND every member account's audit log (`audit_logs.md` §3);
+(3) `email`/`email_original`/`email_clean` re-derived; (4) all outstanding
+`email_verifications` rows invalidated; (5) the avatar pipeline re-runs (gravatar hash +
+letter, below).
+
+### user_avatars  (`avatar_`) — NEW 2026-07-14
+
+**Sign-off:** _unsigned_
+
+| column              | type        | null? | notes                                                                                                                       |
+| ------------------- | ----------- | ----- | --------------------------------------------------------------------------------------------------------------------------- |
+| sid                 | bigint      | no    | identity; never exposed (ids.md §4)                                                                                         |
+| id                  | text PK     | no    | `avatar_...`                                                                                                                |
+| user_id             | text FK     | no    | → users; UNIQUE (one row per user)                                                                                          |
+| source              | text        | no    | enum `AvatarSource`: `custom, gravatar, letter, generated` — what currently displays                                        |
+| custom_file_id      | text FK     | yes   | → files; user-uploaded image (purpose = avatar)                                                                             |
+| gravatar_file_id    | text FK     | yes   | → files; **our mirrored copy** of the gravatar — we never hotlink                                                           |
+| gravatar_hash       | text        | yes   | sha256(trim + lowercase(email)); recomputed on email change                                                                 |
+| gravatar_checked_at | timestamptz | yes   | last existence probe                                                                                                        |
+| gravatar_dismissed  | bool        | no    | user disabled gravatars for their account                                                                                   |
+| generated_seed      | text        | no    | random hash fixed at creation; color = seed mod N_COLORS, character = seed mod N_CHARS (14 × 14 default; both configurable) |
+| letter              | text        | yes   | first letter of email; re-derived on every email change                                                                     |
+| created_at          | timestamptz | no    |                                                                                                                             |
+| updated_at          | timestamptz | no    |                                                                                                                             |
+
+**Gravatar (verified 2026-07-14):** avatar fetches need no API key —
+`https://gravatar.com/avatar/{sha256(trim+lowercase(email))}?s=512&d=404`; `d=404` returns
+HTTP 404 when no gravatar exists (the existence probe), sizes up to 2048px. On signup and on
+every email change we probe, and if one exists we download and store OUR copy as a `files`
+row (`origin = mirrored_url`) — customers' consoles never call gravatar.com.
+
+**Display precedence:** `custom` (if uploaded) → `gravatar` (if mirrored AND not dismissed)
+→ `letter` (default fallback: email's first letter on the seed-derived color) → `generated`
+(seed color + seed character, for when there's no usable letter). Uploading a custom avatar
+overrides but does NOT discard the gravatar state — remove the custom image and the
+gravatar is right back. "Dismiss gravatar" sets `gravatar_dismissed` and falls through to
+letter/generated; the mirrored file is kept (dismissal is reversible).
 
 ### user_sso_connections  (`sso_`) — SSO links (renamed from `user_identities`, 2026-07-14)
 
-**Sign-off:** bt 2026-07-14
+**Sign-off:** _unsigned_
 
 | column           | type        | null? | notes                                                               |
 | ---------------- | ----------- | ----- | ------------------------------------------------------------------- |
 | sid              | bigint      | no    | identity; never exposed (ids.md §4)                                 |
 | id               | text PK     | no    | `sso_...`                                                           |
 | user_id          | text FK     | no    | → users                                                             |
-| provider         | text        | no    | `google, github`                                                    |
+| provider         | text        | no    | enum `SsoProvider`: `google, github`                                |
 | provider_user_id | text        | no    | Google `sub` / GitHub numeric id — the STABLE key (never the email) |
 | provider_email   | text        | no    | email as reported by the provider at link time                      |
+| provider_name    | text        | yes   | the user's real/display name as reported by the provider            |
 | provider_login   | text        | yes   | GitHub username etc., display only                                  |
 | created_at       | timestamptz | no    |                                                                     |
 | last_used_at     | timestamptz | no    | set at link, touched on each login                                  |
@@ -119,21 +185,35 @@ email scopes), not to act on the user's behalf. Nothing to leak.
 
 ### account_members  (`mem_`)
 
-**Sign-off:** bt 2026-07-14
+**Sign-off:** _unsigned_
 
-| column     | type        | null? | notes                               |
-| ---------- | ----------- | ----- | ----------------------------------- |
-| sid        | bigint      | no    | identity; never exposed (ids.md §4) |
-| id         | text PK     | no    | `mem_...`                           |
-| account_id | text FK     | no    | → accounts                          |
-| user_id    | text FK     | no    | → users                             |
-| role       | text        | no    | `admin, member`                     |
-| created_at | timestamptz | no    |                                     |
-|            |             |       | UNIQUE (account_id, user_id)        |
+| column     | type        | null? | notes                                                        |
+| ---------- | ----------- | ----- | ------------------------------------------------------------ |
+| sid        | bigint      | no    | identity; never exposed (ids.md §4)                          |
+| id         | text PK     | no    | `mem_...`                                                    |
+| account_id | text FK     | no    | → accounts                                                   |
+| user_id    | text FK     | no    | → users                                                      |
+| role       | text        | no    | enum `MemberRole`: `owner, admin, member`                    |
+| created_at | timestamptz | no    |                                                              |
+|            |             |       | UNIQUE (account_id, user_id)                                 |
+|            |             |       | UNIQUE (account_id) WHERE role = 'owner' — exactly one owner |
+
+Role rules (REVISED 2026-07-14 — `owner` added above `admin`; enforcement + permission
+matrix in `auth.md` §4):
+
+- The **account creator is the owner**; there is exactly ONE owner per account (partial
+  unique index above). Invitations grant `admin` or `member`, never `owner`.
+- **The owner cannot remove themselves** (or be removed/demoted) — ownership must be
+  transferred first (`POST /v1/account/transfer_ownership`, owner-only, target must already
+  be a member, fresh re-auth; atomic swap: target → owner, old owner → admin). Because the
+  owner can never leave, an account can never be left admin-less.
+- **Every membership mutation is audited** — `member_added`, `member_role_changed`,
+  `member_removed`, `ownership_transferred` — to the account audit log AND the affected
+  user's audit log, in the mutation's transaction (`audit_logs.md` §3).
 
 ### invitations  (`inv_`) — now supports code AND magic link
 
-**Sign-off:** bt 2026-07-14
+**Sign-off:** _unsigned_
 
 | column              | type        | null? | notes                                              |
 | ------------------- | ----------- | ----- | -------------------------------------------------- |
@@ -154,26 +234,35 @@ email scopes), not to act on the user's behalf. Nothing to leak.
 Code and link are two doors to the same invitation: the email contains the magic link; the
 console shows the code for copy/paste into "join with code."
 
+**Controller rule (2026-07-14):** the invite endpoint REJECTS an invite to an email whose
+user is already an accepted member of the account (`409` naming the member). But an
+**unaccepted** invitee may be re-invited freely — re-sending revokes the outstanding
+invitation and issues a fresh one (new code, new expiry).
+
 ### sessions  (`sess_`)
 
-**Sign-off:** bt 2026-07-14
+**Sign-off:** _unsigned_
 
-| column     | type        | null? | notes                               |
-| ---------- | ----------- | ----- | ----------------------------------- |
-| sid        | bigint      | no    | identity; never exposed (ids.md §4) |
-| id         | text PK     | no    | `sess_...`                          |
-| user_id    | text FK     | no    | → users                             |
-| token_hash | text        | no    | sha256 of cookie value              |
-| ip         | inet        | yes   |                                     |
-| user_agent | text        | yes   |                                     |
-| created_at | timestamptz | no    |                                     |
-| expires_at | timestamptz | no    |                                     |
-| revoked_at | timestamptz | yes   |                                     |
+| column     | type        | null? | notes                                                    |
+| ---------- | ----------- | ----- | -------------------------------------------------------- |
+| sid        | bigint      | no    | identity; never exposed (ids.md §4)                      |
+| id         | text PK     | no    | `sess_...`                                               |
+| user_id    | text FK     | no    | → users                                                  |
+| ip         | inet        | yes   | creation IP                                              |
+| user_agent | text        | yes   | raw UA at creation                                       |
+| device     | text        | yes   | parsed from UA ("Chrome on macOS") for the sessions list |
+| created_at | timestamptz | no    |                                                          |
+| expires_at | timestamptz | no    |                                                          |
+| revoked_at | timestamptz | yes   |                                                          |
 
-Sessions are read on every console request, so they **can/will be Redis-cached** (the
-session-cache slot already reserved in `architecture.md` §1): keyed by token hash, TTL from
-`expires_at`, entry deleted on revoke/logout. Postgres stays the source of truth; the cache
-is a read-through.
+**`token_hash` DROPPED (2026-07-14):** the cookie is a **signed JWT**
+(`{sid, uid, pv, iat, exp}`) — the signature is the authenticity, the row is looked up by
+`sid`, and every request is still online-checked so revocation works (full design:
+`auth.md` §1; `pv` = `users.password_version`). Users can list their live sessions (device,
+creation IP, UA) and kill any of them — `auth.md` §3. Sessions are read on every console
+request, so they **can/will be Redis-cached** (the session-cache slot in `architecture.md`
+§1): keyed by session id, TTL from `expires_at`, entry deleted on revoke/logout. Postgres
+stays the source of truth; the cache is a read-through.
 
 ### api_keys  (`key_`; secret currently `foundation_api_...`, shown once)
 
@@ -205,24 +294,30 @@ console displays old keys truthfully after a rename. Same mechanism covers
 
 ### email_verifications  (`emailver_`)
 
-**Sign-off:** bt 2026-07-14
+**Sign-off:** _unsigned_
 
-| column     | type        | null? | notes                               |
-| ---------- | ----------- | ----- | ----------------------------------- |
-| sid        | bigint      | no    | identity; never exposed (ids.md §4) |
-| id         | text PK     | no    | `emailver_...`                      |
-| user_id    | text FK     | no    | → users                             |
-| token_hash | text        | no    | sha256 of emailed token             |
-| created_at | timestamptz | no    |                                     |
-| expires_at | timestamptz | no    |                                     |
-| used_at    | timestamptz | yes   |                                     |
+| column       | type        | null? | notes                                                                 |
+| ------------ | ----------- | ----- | --------------------------------------------------------------------- |
+| sid          | bigint      | no    | identity; never exposed (ids.md §4)                                   |
+| id           | text PK     | no    | `emailver_...`                                                        |
+| user_id      | text FK     | no    | → users                                                               |
+| email        | text        | no    | the canonicalized address this token verifies — snapshot at send time |
+| token_hash   | text        | no    | sha256 of emailed token                                               |
+| created_at   | timestamptz | no    |                                                                       |
+| expires_at   | timestamptz | no    |                                                                       |
+| validated_at | timestamptz | yes   | renamed from `used_at` (2026-07-14) — non-null IS the validity signal |
 
-Dormant at launch (no verification requirement yet); the table exists so enabling
-verification later is a feature flag, not a migration.
+This is the table verification emails are sent against. **`email` is snapshotted on the row
+(2026-07-14)** — double-defensive: outstanding rows are already invalidated on email change
+(the first guard), and validation additionally requires `row.email == users.email` (the
+second), so a token can never verify an address it wasn't minted for. Successful validation
+sets `users.email_verified_at` and writes an `email_verified` user-audit event
+(`audit_logs.md` §3). Dormant at launch (no verification requirement yet); the table exists
+so enabling verification later is a feature flag, not a migration.
 
 ### password_resets  (`pwreset_`)
 
-**Sign-off:** bt 2026-07-14
+**Sign-off:** _unsigned_
 
 | column     | type        | null? | notes                               |
 | ---------- | ----------- | ----- | ----------------------------------- |
@@ -234,12 +329,14 @@ verification later is a feature flag, not a migration.
 | expires_at | timestamptz | no    | short (~1h)                         |
 | used_at    | timestamptz | yes   | single-use                          |
 
-Live at launch (password reset works day one). Reset consumption revokes all existing
-sessions for the user.
+Live at launch (password reset works day one). Reset consumption bumps
+`users.password_version` and **ASKS the user whether to log out their other sessions**
+(CORRECTED 2026-07-14 — not automatic; the choice is theirs, `auth.md` §3) and writes a
+`password_reset` user-audit event (`audit_logs.md` §3).
 
 ## 3. Initial signup flows
 
-**Sign-off:** bt 2026-07-14
+**Sign-off:** _unsigned_
 
 All three converge on the same final step: create `users` row → create `accounts` row →
 create `account_members(owner)` → create session → land in console onboarding.
@@ -251,8 +348,10 @@ everything. No orphan users, no memberless accounts, no half-signups to reap.
 **A. Email + password**
 
 1. `POST /v1/auth/signup` `{email, password, display_name?}`.
-2. Reject if email already exists (→ "log in instead", with SSO hints if that email has
-   linked SSO connections).
+2. If the email already exists AND the supplied password is **correct** for that user →
+   **just log them in** (2026-07-14): they proved exactly what login proves; a "you already
+   have an account" error would be pure friction. Email exists with a wrong/absent password
+   → reject ("log in instead", with SSO hints if that email has linked SSO connections).
 3. Create user (`password_hash` set, `email_verified_at` NULL — no verification at launch;
    when we enable it later, unverified users get a nag + eventual feature gates, not a
    hard signup block).
@@ -278,7 +377,7 @@ as `provider_user_id` (logins are mutable); pick the primary **verified** email 
 
 ## 4. Invite signup flows
 
-**Sign-off:** bt 2026-07-14
+**Sign-off:** _unsigned_
 
 Entry: magic link (`/join?token=...`) or code entry (`/join` + `7F3K-QT9M`). Both resolve the
 invitation (valid, unexpired, unrevoked), then branch on the visitor's state:
@@ -301,7 +400,7 @@ console gets an account switcher from day one.
 
 ## 5. Adding login methods (linking)
 
-**Sign-off:** bt 2026-07-14
+**Sign-off:** _unsigned_
 
 All linking happens **while authenticated**, from console → Security settings. The three
 flows you listed:
@@ -325,25 +424,45 @@ Email/password login now works alongside SSO.
 Same as flow 1 — Gmail-first user connects GitHub (or vice versa). The connections list in
 settings shows all connected methods with `last_used_at` and a disconnect button.
 
-**Unlink rule:** a user must always retain ≥1 login method — the last remaining connection (or
-the password, if it's the only method) cannot be removed. Disconnecting a method requires a
-fresh re-auth with any remaining method.
+**Unlink rules (REVISED 2026-07-14):**
+
+- An SSO connection can be removed **only if the user has an email/password combo** — not
+  merely another SSO provider. (Password is the anchor method.)
+- **Password auth can NEVER be removed once added.** No exceptions in v1 (revisit only if
+  corporate SSO someday demands passwordless-enforced accounts).
+- Together these guarantee ≥1 login method always remains. Disconnecting requires a fresh
+  re-auth; every connect/disconnect writes `sso_connected`/`sso_disconnected` audit events
+  (`audit_logs.md` §3).
 
 **Login resolution (any time):** try `user_sso_connections` by (provider, sub) for SSO; by email +
 password check for passwords. The email-collision rule from §3B applies universally: matching
 email alone NEVER logs you into or merges with an existing user — it routes you to log in
 with an existing method first, then link.
 
-## 6. API endpoints (delta to api.md §9)
+## 6. API endpoints (delta to api.md §9; served by the dashboard gateway — `microservices.md`)
 
-**Sign-off:** bt 2026-07-14
+**Sign-off:** _unsigned_
 
-| Endpoint                             | Method | Purpose                                                    |
-| ------------------------------------ | ------ | ---------------------------------------------------------- |
-| `/v1/auth/oauth/{provider}/start`    | GET    | Begin OAuth (google, github); `intent=login, signup, link` |
-| `/v1/auth/oauth/{provider}/callback` | GET    | Complete OAuth per flows above                             |
-| `/v1/auth/sso_connections`           | GET    | List connected SSO providers                               |
-| `/v1/auth/sso_connections/{id}`      | DELETE | Disconnect (guard: ≥1 login method remains)                |
-| `/v1/auth/password`                  | PUT    | Set/change password (fresh re-auth required)               |
-| `/v1/invitations/{code-or-token}`    | GET    | Resolve invite for the join page                           |
-| `/v1/invitations/{id}/accept`        | POST   | Accept (authenticated)                                     |
+| Endpoint                             | Method | Purpose                                                      |
+| ------------------------------------ | ------ | ------------------------------------------------------------ |
+| `/v1/auth/oauth/{provider}/start`    | GET    | Begin OAuth (google, github); `intent=login, signup, link`   |
+| `/v1/auth/oauth/{provider}/callback` | GET    | Complete OAuth per flows above                               |
+| `/v1/auth/login_methods`             | GET    | ALL login methods: the password entry + every SSO connection |
+| `/v1/auth/login_methods/{sso_id}`    | DELETE | Disconnect an SSO connection (§5 rules)                      |
+| `/v1/auth/password`                  | PUT    | Set/change password (fresh re-auth; no DELETE — §5)          |
+| `/v1/auth/sessions`                  | GET    | Live sessions: device, creation IP, UA (`auth.md` §3)        |
+| `/v1/auth/sessions/{id}`             | DELETE | Kill a session (`?others=true` kills all but current)        |
+| `/v1/user/audit_logs`                | GET    | The user's own audit trail (`audit_logs.md` §4)              |
+| `/v1/account/audit_logs`             | GET    | Whole-account audit trail — admin/owner only                 |
+| `/v1/account/transfer_ownership`     | POST   | Owner-only; target must be a member (`auth.md` §4)           |
+| `/v1/invitations/{code-or-token}`    | GET    | Resolve invite for the join page                             |
+| `/v1/invitations/{id}/accept`        | POST   | Accept (authenticated)                                       |
+
+**`sso_connections` → `login_methods` (RENAMED 2026-07-14):** "SSO connections" discarded
+email/password auth. Decision: ONE inclusive resource — `GET /v1/auth/login_methods` returns
+the password entry (`{kind: "password", enabled, created_at}` — never deletable, so it
+exposes no id) alongside the SSO connections (each with its `sso_...` id, provider,
+provider_email, provider_name, last_used_at). DELETE takes an `sso_...` id, so password
+non-removability is enforced by construction — there is nothing to address. Alternative
+considered: keeping `/v1/auth/sso_connections` + a separate password-status endpoint —
+rejected; the settings page wants one list, and two endpoints invite drift.

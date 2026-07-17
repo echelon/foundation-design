@@ -1,6 +1,7 @@
 # Agent-Facing Documentation (llms.txt & friends)
 
-**Sign-off:** _unsigned_
+**Sign-off:** bt 2026-07-14
+
 <!-- bt: initials + date when approved (e.g. "bt 2026-07-05"). Per-section sign-offs below;
      the top one covers the whole document. Assistants: see ../CLAUDE.md. -->
 <!-- Assistant note 2026-07-05: you signed this doc; restructuring to per-section sign-offs
@@ -16,7 +17,7 @@ they can never drift from reality.
 
 ## 1. The artifacts
 
-**Sign-off:** _unsigned_
+**Sign-off:** bt 2026-07-14
 
 All generated from `crates/core/catalog` (the same single source that produces `catalog.json`,
 the OpenAPI spec, and the docs pages). Following the llmstxt.org convention:
@@ -76,7 +77,7 @@ Both, cheaply, same files:
    its static publish directory. Canonical URLs live on the docs domain
    (`docs.example.dev/llms.txt`, `docs.example.dev/models/{id}/llms.txt`). CDN-cached, zero
    backend load — right place for high-volume agent slurping.
-2. **Convenience: api-server.** Agents habitually probe the API host itself. Axum serves
+2. **Convenience: api-gateway.** Agents habitually probe the API host itself. Axum serves
    `GET /llms.txt` and `GET /v1/llms.txt` as 308 redirects to the docs-domain canonical (one
    tiny handler, no file embedding, no second deploy artifact to keep fresh).
 
@@ -98,7 +99,7 @@ templates (askama): model_page.md, api_guide.md, index.md
 generated/llms/**   (committed)
    │  CI: regen + git diff --exit-code
    ▼
-docs app build copies → Netlify CDN;  api-server redirects point here
+docs app build copies → Netlify CDN;  api-gateway redirects point here
 ```
 
 The example-request builder is the piece worth doing well: it derives runnable curl/TS/Python
@@ -115,7 +116,7 @@ correct by construction — never hand-maintained. The docs *website* uses the s
 - Absolute URLs everywhere (files get copied into agent contexts detached from their origin).
 - Every doc states the model's canonical ID early and verbatim — the string agents must not
   hallucinate.
-- Include the failure modes agents must handle: 402 body shape, poll cadence guidance, job
-  `expires_at`, webhook signature verification snippet.
+- Include the failure modes agents must handle: 400, 401, 402 body shape, 429 rate limiting, 
+  poll cadence guidance, job `expires_at`, webhook signature verification snippet.
 - Keep each per-model file self-contained (paste-safe) even though that means repetition —
   repetition is free for generated files.

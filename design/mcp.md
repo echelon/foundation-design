@@ -15,7 +15,7 @@ retry with fixed params. That loop is the MCP server.
 **Sign-off:** _unsigned_
 
 - **Transport:** Streamable HTTP MCP endpoint at `https://api.example.dev/mcp`, mounted in
-  `api-server` (a tower service alongside the REST routers — Rust MCP SDK `rmcp`). No separate
+  `api-gateway` (a tower service alongside the REST routers — Rust MCP SDK `rmcp`). No separate
   deployable; splitting later is a routing change, same as the console-api argument.
 - **Auth:** the same `foundation_api_...` keys, sent as `Authorization: Bearer` on the MCP
   connection. No special MCP identities; a revoked key kills MCP access identically.

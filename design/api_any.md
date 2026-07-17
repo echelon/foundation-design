@@ -1,6 +1,6 @@
 # APIs: the Any API
 
-**Sign-off:** _unsigned_
+**Sign-off:** bt 2026-07-14
 
 <!-- bt: initials + date when approved (e.g. "bt 2026-07-05"). Per-section sign-offs below;
      the top one covers the whole document. Assistants: see ../CLAUDE.md. -->
@@ -48,13 +48,6 @@ the brand in the path, and gives the plane its own namespace instead of sharing 
 | `/v1/any/text/sync`    | POST   | Any LLM — **synchronous** (§4)                                                           |
 | `/v1/any/{media}/cost` | POST   | Cost twin: identical body, exact price (worst-case estimate for text), no job, no charge |
 
-Alternatives considered:
-
-| Namespace              | Verdict                                                                                                                    |
-| ---------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `/v1/generate/{media}` | Previous design (`api.md` §3) — RETIRED: generic verb, doesn't say which shape, and the other planes squatted under it too |
-| **`/v1/any/{media}`**  | **RECOMMENDED** — brand in the path, one namespace per plane                                                               |
-
 ## 3. Request & response (media)
 
 **Sign-off:** 2026-07-14
@@ -79,10 +72,9 @@ The only exception is `/v1/any/text/sync` which is **synchronous**.
 
 ## 4. Text through Any — async by default, `/sync` variant
 
-**Sign-off:** _unsigned_
+**Sign-off:** bt 2026-07-14
 
-Text is the LLM member of the family, with two doors (matching the §2 table — this section
-previously said sync-only and was ALIGNED 2026-07-14 to bt's §2 revision):
+Text is the LLM member of the family, with two doors (matching the §2 table):
 
 - **`POST /v1/any/text` — asynchronous**, uniform with every other media type: `201` + Job
   resource, dispatch through the queue, result by polling or webhook. The completion lands
@@ -101,7 +93,7 @@ door is born `running`).
 
 ## 5. Fit with the other planes
 
-**Sign-off:** _unsigned_
+**Sign-off:** bt 2026-07-14
 
 | Plane    | You know…            | Schema                   | Doc                     |
 | -------- | -------------------- | ------------------------ | ----------------------- |

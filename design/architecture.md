@@ -21,7 +21,7 @@ Siblings: `api.md`, `schema.md`, `ids.md`, `models.md`, `enums.md`, `agents.md`,
 | Cache / hot path | Redis (DO managed Valkey/Redis)           | Rate limiting, session cache                                  |
 | Object storage   | **Cloudflare R2** (DECIDED)               | Zero egress — we host media forever (§8)                      |
 | Frontend hosting | **Netlify** (DECIDED)                     | All three Nx apps                                             |
-| Compute hosting  | **DigitalOcean** (DECIDED)                | No AWS. Droplets or App Platform for api-server + worker      |
+| Compute hosting  | **DigitalOcean** (DECIDED)                | No AWS. Droplets or App Platform for the gateways + worker    |
 | Job queue        | Postgres (`FOR UPDATE SKIP LOCKED`)       | Swappable later (NATS JetStream is the leading candidate)     |
 | Billing          | Stripe via `async-stripe`                 |                                                               |
 | Frontend         | Nx + TypeScript + React + Tailwind + Vite |                                                               |
@@ -107,7 +107,7 @@ Format spec, entropy math, the keep-the-millisecond-clock decision, and the pref
 - Spend visibility is a first-class product surface: every job row carries its cost + status;
   `GET /v1/jobs` and the ledger endpoints power the console's spend views (see `api.md`).
 
-## 5. Monorepo layout (REVISED: `providers` → `clients`; single api-server)
+## 5. Monorepo layout (REVISED 2026-07-14: two gateways — see `microservices.md`)
 
 **Sign-off:** _unsigned_
 
@@ -117,7 +117,9 @@ foundation/
 ├── rust-toolchain.toml
 ├── crates/
 │   ├── bin/
-│   │   ├── api-server/             # ONE service: public API + console API + /mcp (axum)
+│   │   ├── api-gateway/            # the product API: /v1/any, /v1/models, /v1/chat, jobs,
+│   │   │                           #   files, /mcp (axum) — see microservices.md
+│   │   ├── dashboard-gateway/      # the console API: auth, accounts, billing, audit logs
 │   │   ├── worker/                 # queue consumer: dispatch/poll/webhook/ingest/rollups
 │   │   └── admin-cli/              # migrations, ops one-offs
 │   ├── core/
@@ -171,12 +173,12 @@ foundation/
 └── infra/                          # docker-compose (pg, redis, minio-as-R2-stand-in), CI
 ```
 
-**api-server vs dashboard-server:** one service (DECIDED, revisit if scaling demands). The
-console calls the same endpoints as customers, with cookie auth instead of keys — a separate
-dashboard service would duplicate the whole auth/billing/jobs stack for zero isolation benefit
-now. Routers are separate axum `Router` modules mounted in one binary, so splitting later is a
-deployment change, not a refactor. The `worker` is a separate deployable from day one (it has
-different scaling and restart characteristics).
+**Two gateways (REVISED 2026-07-14, supersedes the earlier one-service decision):**
+`api-gateway` serves the product (generate/Any/chat/jobs/files, API-key + sandbox-cookie +
+MCP auth); `dashboard-gateway` serves the console (auth flows, accounts, billing, audit).
+Rationale, endpoint split, and shared-crate story: **`microservices.md`**. Both are thin
+binaries over the same `services/*` crates, so re-merging stays a deployment change. The
+`worker` remains a separate deployable (different scaling and restart characteristics).
 
 ## 6. Provider adapter seam
 

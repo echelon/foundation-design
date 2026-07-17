@@ -148,22 +148,11 @@ moved to **`logging.md`** (2026-07-05), which owns the logs product: truncation
 | created_at | timestamptz |                                           |
 | revoked_at | timestamptz | null; rotation = two active at once       |
 
-### audit_logs  (`audit_`)
+### audit_logs — moved to `audit_logs.md` (2026-07-14)
 
-**Sign-off:** _unsigned_
-
-| column        | type        | notes                                                                                                                                                      |
-| ------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| sid           | bigint      | identity; never exposed (ids.md §4)                                                                                                                        |
-| id            | text PK     | `audit_...`                                                                                                                                                |
-| account_id    | text FK     | → accounts                                                                                                                                                 |
-| actor_user_id | text FK     | → users                                                                                                                                                    |
-| action        | text        | `key.created, key.revoked, member.invited, limit.changed, …`                                                                                               |
-| target_type   | text        | enum `AuditTargetType`: singular entity slug (`api_key, member, invitation, spend_limit, …`) — one value per §7 entity, generated from the prefix registry |
-| target_id     | text        | the affected row's id (self-describing prefix!)                                                                                                            |
-| data          | jsonb       |                                                                                                                                                            |
-| ip            | inet        |                                                                                                                                                            |
-| created_at    | timestamptz |                                                                                                                                                            |
+Split into TWO tables: `user_audit_logs` (`uaudit_`, identity events, user-visible) and
+`account_audit_logs` (`aaudit_`, resource/membership events, admin-visible) — event enum,
+dual-write matrix, and API in **`audit_logs.md`**.
 
 ### idempotency_keys  (`idem_`)
 
@@ -208,6 +197,8 @@ outline; a table missing here doesn't exist.
 |                   | api_keys             | `key_`      | `accounts.md` §2           |
 |                   | email_verifications  | `emailver_` | `accounts.md` §2           |
 |                   | password_resets      | `pwreset_`  | `accounts.md` §2           |
+|                   | email_changes        | `emailchg_` | `accounts.md` §2           |
+|                   | user_avatars         | `avatar_`   | `accounts.md` §2           |
 |                   | end_users            | `enduser_`  | **this doc** §1            |
 | Jobs              | jobs                 | `job_`      | `jobs.md` §4               |
 |                   | job_events           | `jevt_`     | `jobs.md` §4               |
@@ -224,8 +215,9 @@ outline; a table missing here doesn't exist.
 | Logs              | request_logs         | `rlog_`     | `logging.md` §3            |
 |                   | provider_calls       | `pcall_`    | `logging.md` §3            |
 |                   | webhook_deliveries   | `whd_`      | `logging.md` §3            |
-| Security & audit  | webhook_secrets      | `whs_`      | **this doc** §5            |
-|                   | audit_logs           | `audit_`    | **this doc** §5            |
+| Security          | webhook_secrets      | `whs_`      | **this doc** §5            |
 |                   | idempotency_keys     | `idem_`     | **this doc** §5            |
+| Audit             | user_audit_logs      | `uaudit_`   | `audit_logs.md` §2         |
+|                   | account_audit_logs   | `aaudit_`   | `audit_logs.md` §2         |
 | Rollups           | usage_rollups        | `roll_`     | `rankings.md` §2           |
 | Future (reserved) | end_user_limits      | `eulimit_`  | `end-users.md` (not built) |

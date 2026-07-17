@@ -4,7 +4,7 @@
 <!-- bt: initials + date when approved (e.g. "bt 2026-07-05"). Per-section sign-offs below;
      the top one covers the whole document. Assistants: see ../CLAUDE.md. -->
 
-**Status:** living document (2026-07-05). Every endpoint served by `api-server`.
+**Status:** living document (2026-07-05). Endpoints are split across TWO gateway binaries — `api-gateway` (the product) and `dashboard-gateway` (the console) — per `microservices.md`.
 Base URL placeholder: `https://api.example.dev`. Siblings: `architecture.md`, `schema.md`,
 `models.md`, `enums.md`, `logging.md`, `mcp.md`, `end-users.md`, `rankings.md` — and the
 generation planes: `api_any.md`, `api_model_specific.md`, `apis_llm.md`.
@@ -251,17 +251,17 @@ per-job view; `/v1/billing/ledger` is the money view; `/v1/billing/usage` is the
 
 **Sign-off:** _unsigned_
 
-| Endpoint                         | Method          | Purpose                                                                                            |
-| -------------------------------- | --------------- | -------------------------------------------------------------------------------------------------- |
-| `/v1/account`                    | GET/PATCH       | Account settings                                                                                   |
-| `/v1/account/members`            | GET             | Team list                                                                                          |
-| `/v1/account/members/{id}`       | PATCH/DELETE    | Role change, removal                                                                               |
-| `/v1/account/invitations`        | GET/POST/DELETE | Invite teammates                                                                                   |
-| `/v1/api-keys`                   | GET/POST        | Create: `title` (immutable), `description`, `expires_at?` — `foundation_api_...` secret shown once |
-| `/v1/api-keys/{id}`              | PATCH/DELETE    | PATCH edits description only; DELETE = revoke                                                      |
-| `/v1/webhook-secret`             | GET/POST        | View/rotate `foundation_whsec_...` (two active during rotation)                                    |
-| `/v1/auth/{signup,login,logout}` | POST            | Console session auth                                                                               |
-| `/v1/auth/password-reset`        | POST            | Token flow                                                                                         |
+| Endpoint                         | Method          | Purpose                                                                                                                         |
+| -------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `/v1/account`                    | GET/PATCH       | Account settings                                                                                                                |
+| `/v1/account/members`            | GET             | Team list                                                                                                                       |
+| `/v1/account/members/{id}`       | PATCH/DELETE    | Role change, removal                                                                                                            |
+| `/v1/account/invitations`        | GET/POST/DELETE | Invite teammates                                                                                                                |
+| `/v1/api-keys`                   | GET/POST        | Create: `title` (immutable), `description`, `expires_at?` — `foundation_api_...` secret shown once                              |
+| `/v1/api-keys/{id}`              | PATCH/DELETE    | PATCH edits description only; DELETE = revoke                                                                                   |
+| `/v1/webhook-secret`             | GET/POST        | View/rotate `foundation_whsec_...` (two active during rotation)                                                                 |
+| `/v1/auth/{signup,login,logout}` | POST            | Console session auth (`auth.md`; full auth surface: `accounts.md` §6 — login_methods, sessions, audit logs, ownership transfer) |
+| `/v1/auth/password-reset`        | POST            | Token flow                                                                                                                      |
 
 ## 10. Outbound webhooks (us → customer)
 
@@ -287,7 +287,7 @@ is stdlib-only for customers, and revocation is per-account. (Comparison recorde
 
 **Sign-off:** _unsigned_
 
-`/mcp` — streamable-HTTP MCP endpoint mounted in api-server; tools mirror this API
+`/mcp` — streamable-HTTP MCP endpoint mounted in api-gateway; tools mirror this API
 (generate/cost/jobs/models). Full design: `mcp.md`.
 
 ## 12. Public (unauthenticated)
