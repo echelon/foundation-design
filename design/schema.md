@@ -4,7 +4,7 @@
 <!-- bt: initials + date when approved (e.g. "bt 2026-07-05"). Per-section sign-offs below;
      the top one covers the whole document. Assistants: see ../CLAUDE.md. -->
 
-**Status:** living document (2026-07-05). Postgres. Siblings: `architecture.md`, `api.md`,
+**Status:** living document (2026-07-05). Postgres. Siblings: `architecture.md`, `api_overview.md`, `api_misc.md`,
 `models.md`, `enums.md`, `jobs.md`, `files.md`, `logging.md`, `end-users.md`, `rankings.md`.
 
 This doc owns only the tables no sibling claims. Every table defined in a sibling doc appears
@@ -90,7 +90,7 @@ section.
 | task_type    | text        | `dispatch_job, poll_provider, ingest_outputs, deliver_webhook, settle_refund, auto_refill, rollup_usage, process_stripe_event, …` |
 | payload      | jsonb       | usually `{ "job_id": ... }`                                                                                                       |
 | created_at   | timestamptz |                                                                                                                                   |
-| run_after    | timestamptz | scheduling + backoff                                                                                                              |
+| run_at       | timestamptz | scheduling + backoff; runnable at-or-after this time                                                                              |
 | priority     | int         | lower = sooner                                                                                                                    |
 | attempts     | int         |                                                                                                                                   |
 | max_attempts | int         |                                                                                                                                   |
@@ -99,8 +99,8 @@ section.
 | status       | text        | `pending, running, done, dead`                                                                                                    |
 | last_error   | text        | null                                                                                                                              |
 
-Worker loop: `SELECT ... WHERE status='pending' AND run_after <= now() ORDER BY priority,
-run_after FOR UPDATE SKIP LOCKED LIMIT n`. Lowered fillfactor + aggressive autovacuum.
+Worker loop: `SELECT ... WHERE status='pending' AND run_at <= now() ORDER BY priority,
+run_at FOR UPDATE SKIP LOCKED LIMIT n`. Lowered fillfactor + aggressive autovacuum.
 
 **Visibility-timeout reclaim (ADDED 2026-07-14** — `locked_at` was named "visibility timeout
 base" with no reaper specified): a sweeper task runs every ~30s:
@@ -186,38 +186,41 @@ Moved to `payments.md` §6 (with the refund mirror and LLM exception).
 Every table in the system, wherever it's defined — sibling doc or this one. This is THE
 outline; a table missing here doesn't exist.
 
-| Domain            | Table                | Prefix      | Defined in                 |
-| ----------------- | -------------------- | ----------- | -------------------------- |
-| Identity & access | accounts             | `acct_`     | `accounts.md` §2           |
-|                   | users                | `user_`     | `accounts.md` §2           |
-|                   | user_sso_connections | `sso_`      | `accounts.md` §2           |
-|                   | account_members      | `mem_`      | `accounts.md` §2           |
-|                   | invitations          | `inv_`      | `accounts.md` §2           |
-|                   | sessions             | `sess_`     | `accounts.md` §2           |
-|                   | api_keys             | `key_`      | `accounts.md` §2           |
-|                   | email_verifications  | `emailver_` | `accounts.md` §2           |
-|                   | password_resets      | `pwreset_`  | `accounts.md` §2           |
-|                   | email_changes        | `emailchg_` | `accounts.md` §2           |
-|                   | user_avatars         | `avatar_`   | `accounts.md` §2           |
-|                   | end_users            | `enduser_`  | **this doc** §1            |
-| Jobs              | jobs                 | `job_`      | `jobs.md` §4               |
-|                   | job_events           | `jevt_`     | `jobs.md` §4               |
-| Files & outputs   | files                | `file_`     | `files.md` §2              |
-|                   | outputs              | `out_`      | `files.md` §2              |
-| Queue             | queue_tasks          | `task_`     | **this doc** §3            |
-| Money             | stripe_customers     | `cust_`     | `payments.md` §2           |
-|                   | payment_methods      | `pm_`       | `payments.md` §2           |
-|                   | ledger_entries       | `txn_`      | `payments.md` §2           |
-|                   | account_balances     | —           | `payments.md` §2           |
-|                   | auto_refill_rules    | `refill_`   | `payments.md` §2           |
-|                   | spend_limits         | `limit_`    | `payments.md` §2           |
-|                   | stripe_events        | `sevt_`     | `payments.md` §2           |
-| Logs              | request_logs         | `rlog_`     | `logging.md` §3            |
-|                   | provider_calls       | `pcall_`    | `logging.md` §3            |
-|                   | webhook_deliveries   | `whd_`      | `logging.md` §3            |
-| Security          | webhook_secrets      | `whs_`      | **this doc** §5            |
-|                   | idempotency_keys     | `idem_`     | **this doc** §5            |
-| Audit             | user_audit_logs      | `uaudit_`   | `audit_logs.md` §2         |
-|                   | account_audit_logs   | `aaudit_`   | `audit_logs.md` §2         |
-| Rollups           | usage_rollups        | `roll_`     | `rankings.md` §2           |
-| Future (reserved) | end_user_limits      | `eulimit_`  | `end-users.md` (not built) |
+| Domain            | Table                    | Prefix      | Defined in                    |
+| ----------------- | ------------------------ | ----------- | ----------------------------- |
+| Identity & access | accounts                 | `acct_`     | `accounts.md` §2              |
+|                   | users                    | `user_`     | `accounts.md` §2              |
+|                   | user_sso_connections     | `sso_`      | `accounts.md` §2              |
+|                   | account_members          | `mem_`      | `accounts.md` §2              |
+|                   | invitations              | `inv_`      | `accounts.md` §2              |
+|                   | sessions                 | `sess_`     | `accounts.md` §2              |
+|                   | api_keys                 | `key_`      | `accounts.md` §2              |
+|                   | email_verifications      | `emailver_` | `accounts.md` §2              |
+|                   | password_resets          | `pwreset_`  | `accounts.md` §2              |
+|                   | email_changes            | `emailchg_` | `accounts.md` §2              |
+|                   | user_avatars             | `avatar_`   | `accounts.md` §2              |
+|                   | user_avatar_files        | `uaf_`      | `accounts.md` §2              |
+|                   | user_sso_disconnections  | `ssodisc_`  | `accounts.md` §2              |
+|                   | end_users                | `enduser_`  | **this doc** §1               |
+| Jobs              | jobs                     | `job_`      | `jobs.md` §4                  |
+|                   | job_events               | `jevt_`     | `jobs.md` §4                  |
+| Files & outputs   | files                    | `file_`     | `files.md` §2                 |
+|                   | outputs                  | `out_`      | `files.md` §2                 |
+| Queue             | queue_tasks              | `task_`     | **this doc** §3               |
+| Money             | stripe_customers         | `cust_`     | `payments.md` §2              |
+|                   | payment_methods          | `pm_`       | `payments.md` §2              |
+|                   | ledger_entries           | `txn_`      | `payments.md` §2              |
+|                   | account_balances         | —           | `payments.md` §2              |
+|                   | auto_refill_rules        | `refill_`   | `payments.md` §2              |
+|                   | spend_limits             | `limit_`    | `payments.md` §2              |
+|                   | stripe_events            | `sevt_`     | `payments.md` §2              |
+| Logs              | request_logs             | `rlog_`     | `logging.md` §3               |
+|                   | provider_calls           | `pcall_`    | `logging.md` §3               |
+|                   | webhook_deliveries       | `whd_`      | `logging.md` §3               |
+| Security          | webhook_secrets          | `whs_`      | **this doc** §5               |
+|                   | idempotency_keys         | `idem_`     | **this doc** §5               |
+| Audit             | user_audit_logs          | `uaudit_`   | `audit_logs.md` §2            |
+|                   | account_audit_logs       | `aaudit_`   | `audit_logs.md` §2            |
+|                   | impersonation_audit_logs | `impaudit_` | `accounts.md` §2 (staff-only) |
+| Rollups           | usage_rollups            | `roll_`     | `rankings.md` §2              |
+| Future (reserved) | end_user_limits          | `eulimit_`  | `end-users.md` (not built)    |

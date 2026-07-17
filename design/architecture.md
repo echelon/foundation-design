@@ -5,8 +5,8 @@
      the top one covers the whole document. Assistants: see ../CLAUDE.md. -->
 
 **Status:** living document. Split out of `../2026-07/2026-07-04-initial-build.md` on 2026-07-04.
-Siblings: `api.md`, `schema.md`, `ids.md`, `models.md`, `enums.md`, `agents.md`, `logging.md`,
-`mcp.md`, `end-users.md`, `rankings.md`, `naming_conventions.md`, `coding_conventions.md`.
+Siblings: `api_overview.md`, `api_misc.md`, `schema.md`, `ids.md`, `models.md`, `enums.md`, `agents.md`, `logging.md`,
+`mcp.md`, `end-users.md`, `rankings.md`, `conventions_naming.md`, `conventions_coding.md`.
 
 ---
 
@@ -105,9 +105,9 @@ Format spec, entropy math, the keep-the-millisecond-clock decision, and the pref
   table, same 402. The only difference is auth (cookie vs API key), recorded on the job as
   `source = api_key, dashboard, mcp`.
 - Spend visibility is a first-class product surface: every job row carries its cost + status;
-  `GET /v1/jobs` and the ledger endpoints power the console's spend views (see `api.md`).
+  `GET /v1/jobs` and the ledger endpoints power the console's spend views (see `api_misc.md` §5).
 
-## 5. Monorepo layout (REVISED 2026-07-14: two gateways — see `microservices.md`)
+## 5. Monorepo layout (REVISED 2026-07-17: three ingress services — see `microservices.md`)
 
 **Sign-off:** _unsigned_
 
@@ -120,6 +120,8 @@ foundation/
 │   │   ├── api-gateway/            # the product API: /v1/any, /v1/models, /v1/chat, jobs,
 │   │   │                           #   files, /mcp (axum) — see microservices.md
 │   │   ├── dashboard-gateway/      # the console API: auth, accounts, billing, audit logs
+│   │   ├── webhooks-inbound/       # 3rd-party inbound webhooks: /stripe/webhook,
+│   │   │                           #   /webhooks/{partner} (sig-authed) — see microservices.md
 │   │   ├── worker/                 # queue consumer: dispatch/poll/webhook/ingest/rollups
 │   │   └── admin-cli/              # migrations, ops one-offs
 │   ├── core/

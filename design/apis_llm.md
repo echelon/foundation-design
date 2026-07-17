@@ -7,7 +7,7 @@
 **Status:** living document (2026-07-14). Peeled from `api.md` §5. One of the three
 generation planes: this doc (chat), `api_any.md` (the Any API), `api_model_specific.md`
 (unified + granular). Shared conventions (auth, errors, idempotency, cost twins, `end_user`):
-`api.md` §1–§3.
+`api_overview.md` §1–§3.
 
 ---
 
@@ -64,7 +64,7 @@ OpenAI response shape, with deliberate deltas:
   "param_adjustments": [...] }` — additive fields don't break OpenAI clients; name swaps
   with the product name.
 
-Errors on this plane use the standard envelope (`api.md` §2), which is field-compatible with
+Errors on this plane use the standard envelope (`api_overview.md` §2), which is field-compatible with
 OpenAI's (`error.message/type/param` present; we add `details`/`request_id`).
 
 ## 4. Billing (metered mode)

@@ -6,7 +6,7 @@
 
 **Status:** living document (2026-07-14). Style and structure rules for the Rust and
 TypeScript codebases, mined from ArtCraft practice plus decisions in this tree. Sibling:
-`naming_conventions.md` (names only; this doc is everything else). Test conventions:
+`conventions_naming.md` (names only; this doc is everything else). Test conventions:
 `testing.md`.
 
 ---
@@ -157,7 +157,7 @@ Full strategy in `testing.md`; style rules here:
   that are part of a table's key (e.g. a rollup's `period_start`) are data, not row
   metadata, and stay with the payload columns.
 - Column order overall: `sid`, `id`, FKs, payload, timestamps (`ids.md` §4,
-  `naming_conventions.md` §4).
+  `conventions_naming.md` §4).
 - Every design-doc table lists a `null?` column; nullability is decided at design time, not
   at migration time.
 

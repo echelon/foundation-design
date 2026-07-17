@@ -22,7 +22,7 @@ started, it graduates to its own design doc and gets struck here.
 | `/v1/completions` (raw text mode) | RP/power users need instruct-template control; OpenRouter keeps both                                                                               | Path reserved; same job/billing shape as chat                                                | `reports/read/role-play.md`                   |
 | WebSocket text mode               | Watch-item: OpenAI Responses WS mode is the first crack in "WS is voice-only"; if agentic loops normalize it, the stream plane grows a WS listener | Plane split is exactly the seam it slots into                                                | `reports/llm-existing-synchronous-apis.md` §5 |
 | Threads/conversations resource    | Server-held conversation state (OpenAI Conversations, Gemini Interactions are drifting stateful)                                                   | A new resource referencing jobs; job primitive unchanged. Don't squat on `/v1/conversations` | `reports/jobs-design-considerations-2.md` §5  |
-| `/v1/embeddings`, `/v1/batch`     | Reserved, not built                                                                                                                                | Paths reserved in `api.md` §13                                                               | `api.md`                                      |
+| `/v1/embeddings`, `/v1/batch`     | Reserved, not built                                                                                                                                | Paths reserved in `api_overview.md` §5                                                       | `api_overview.md`                             |
 
 ## 2. Media planes
 
@@ -105,13 +105,13 @@ Roadmap items this pins:
 
 **Sign-off:** bt 2026-07-06
 
-| Item                         | Notes                                                                 | Design seam today                              | Source          |
-| ---------------------------- | --------------------------------------------------------------------- | ---------------------------------------------- | --------------- |
-| Model aliases                | Launch with zero; add `short`/`rename`/`competitor` kinds when needed | Code-level alias map + rules already specified | `models.md` §12 |
-| Pinned snapshots / `_latest` | May not ship in v1; lint rules + catalog shape ready day one          | `models.md` §13 (DECIDED)                      | `models.md`     |
-| `end_user_limits`            | Per-end-user spend caps (customers ask for this eventually)           | Table sketched, prefix reserved (`eulimit_`)   | `end-users.md`  |
-| Email verification           | Dormant at launch; enabling = feature flag, not migration             | `email_verifications` table exists             | `accounts.md`   |
-| `job.started` webhook event  | Later event type alongside completed/failed                           | Events list is additive                        | `api.md` §10    |
+| Item                         | Notes                                                                 | Design seam today                              | Source               |
+| ---------------------------- | --------------------------------------------------------------------- | ---------------------------------------------- | -------------------- |
+| Model aliases                | Launch with zero; add `short`/`rename`/`competitor` kinds when needed | Code-level alias map + rules already specified | `models.md` §12      |
+| Pinned snapshots / `_latest` | May not ship in v1; lint rules + catalog shape ready day one          | `models.md` §13 (DECIDED)                      | `models.md`          |
+| `end_user_limits`            | Per-end-user spend caps (customers ask for this eventually)           | Table sketched, prefix reserved (`eulimit_`)   | `end-users.md`       |
+| Email verification           | Dormant at launch; enabling = feature flag, not migration             | `email_verifications` table exists             | `accounts.md`        |
+| `job.started` webhook event  | Later event type alongside completed/failed                           | Events list is additive                        | `api_overview.md` §4 |
 
 ## 7. Explicitly NOT on the roadmap
 

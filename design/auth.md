@@ -7,7 +7,7 @@
 **Status:** living document (2026-07-14). Owns the session-token design, login flows,
 session management, and the authorization model. The account/user/membership **tables** and
 the signup/invite/linking **flows** live in `accounts.md` (cross-referenced throughout);
-audit events in `audit_logs.md`; API-key auth for the product API in `api.md` §1 and
+audit events in `audit_logs.md`; API-key auth for the product API in `api_overview.md` §1 and
 `microservices.md`.
 
 ---
@@ -21,7 +21,7 @@ or store it in a JWT?" — answer: **yes; `token_hash` is dropped.** The cookie 
 **signed JWT** used as a *rollup of state*, not as a stateless bearer:
 
 ```
-cookie = JWT{ sid: "sess_01j0...", uid: "user_01j0...", pv: 3, iat, exp }   (EdDSA, kid header)
+cookie = JWT{ sid: "sess_01j0...", uid: "user_01j0...", sv: 7, iat, exp }   (EdDSA, kid header)
 ```
 
 - **Signature replaces the random token.** With an unforgeable signature there is nothing
@@ -32,12 +32,16 @@ cookie = JWT{ sid: "sess_01j0...", uid: "user_01j0...", pv: 3, iat, exp }   (EdD
   is NOT trusted alone: middleware verifies the signature, then loads `sessions[sid]`
   (Redis read-through keyed by session id, Postgres the source of truth). Revoked or
   expired row → 401 immediately. Minted JWTs are therefore fully revocable.
-- **`pv` = the user's `password_version`** (vector clock on the users row, +1 on every
-  password set/change/reset — `accounts.md` §2). If `jwt.pv != users.password_version` the
-  session is treated as revoked — this is how "log out my other sessions" works in O(1)
-  without touching each session row.
-- Claims may grow (e.g. impersonation flags for support); the rule stands: claims are
-  cached hints, the DB check is the authority.
+- **`sv` = the user's `session_version`** — the *enforced* logout vector clock on the users
+  row (`accounts.md` §2). If `jwt.sv != users.session_version` the session is treated as
+  revoked: this is how "log out my other/all sessions" works in O(1) without touching each
+  session row. **Two separate clocks (REVISED 2026-07-17):** `password_version` records
+  password changes but is **no longer in the cookie and no longer forces logout** — changing a
+  password does NOT end other sessions unless the user opts in, and that opt-in bumps
+  `session_version`, not the password clock. A password change and a session purge are now
+  independent choices (§3).
+- Impersonation is modeled on the `sessions` row (`impersonator_user_id`, §6), not as a JWT
+  claim; the rule stands regardless: claims are cached hints, the DB check is the authority.
 - Signing keys live in config with `kid` rotation: new logins sign with the new key, old
   keys stay in the verify set until their sessions age out.
 - Cookie attributes: `HttpOnly; Secure; SameSite=Lax`; CSRF defense for cookie-authed
@@ -64,16 +68,36 @@ removed once set; SSO removable only when a password exists).
 
 **Sign-off:** _unsigned_
 
-Users can see and kill their live sessions:
+Users see and kill their live sessions from Settings → Security:
 
 - `GET /v1/auth/sessions` — every non-revoked, non-expired session: created_at, creation
-  `ip`, `user_agent`, parsed `device`, last-seen, and a "this device" marker.
+  `ip`, `user_agent`, parsed `device`, last-seen, and a "this device" marker. (Staff
+  impersonation sessions are filtered out — they are internal artifacts, §6.)
 - `DELETE /v1/auth/sessions/{id}` — kill one (writes `revoked_at`, deletes the cache entry;
   `session_revoked` user-audit event).
-- `DELETE /v1/auth/sessions?others=true` — kill everything except the current session.
-- **Password reset/change does NOT force-revoke other sessions** — the user is ASKED
-  ("log out my other devices?"): yes → bump `password_version` (invalidates every session's
-  `pv` claim except the fresh one); no → sessions live on.
+- `DELETE /v1/auth/sessions?others=true` — "log out all other sessions": bumps
+  `users.session_version` AND writes `revoked_at` on every session except the current, then
+  re-mints the current cookie at the new `sv`.
+
+**A session dies exactly three ways** (more can be added later — e.g. a future admin-set
+expiry bump):
+
+1. **Expiry.** `expires_at` has passed — pure row state; the online check returns 401.
+   Nothing writes `expires_at` after creation today except impersonation's 1h cap (§6); a
+   user-driven extension is a possible future.
+2. **Manual single kill.** The user clicks "kill" next to a device in the sessions list →
+   `DELETE /v1/auth/sessions/{id}` writes that row's `revoked_at` and drops its cache entry.
+   Only that one session dies.
+3. **Kill-all — the `session_version` bump.** "Log out all sessions" bumps
+   `users.session_version` (every outstanding JWT now carries a stale `sv` → revoked in O(1),
+   no per-row read) **and** writes `revoked_at` on the rows so durable state and cache agree.
+   The two together cover the fast path (stale `sv` rejected outright) and the slow path
+   (`revoked_at` for anything that still re-reads its row).
+
+**Password reset/change does NOT force-revoke other sessions** — the user is ASKED ("log out
+my other devices?"): yes → path 3 minus the current session (bump `session_version`); no →
+sessions live on. `password_version` is bumped either way as a record, but it is not the clock
+that ends sessions (REVISED 2026-07-17 — that is `session_version`).
 
 ## 4. Authorization: roles & the account switcher
 
@@ -118,3 +142,28 @@ Rules (enforced in `services/auth`, all audited — `audit_logs.md` §3):
 Product-API requests made with a cookie record `source = dashboard` on the job and bill
 identically (`architecture.md` §4). Auth middleware is one tower layer per gateway; both
 resolve to the same internal `AuthContext { account, user?, source, api_key? }`.
+
+## 6. Support impersonation (staff only)
+
+**Sign-off:** _unsigned_
+
+Support/ops staff log into a customer's account to debug — a **staff impersonation session**.
+It is an ordinary `sessions` row (`accounts.md` §2) with three differences:
+
+- **`impersonator_user_id` is set** to the staff user. Presence of that column IS the
+  impersonation flag; it is written at creation and never mutated. `user_id` stays the
+  customer being acted as, so every downstream authorization check and audit row already
+  attributes actions to the right account — with the impersonator permanently recorded
+  alongside. Impersonation is NOT a JWT claim (§1): the row is the authority.
+- **Short-lived: `expires_at` ≤ `created_at + 1h`**, capped at mint, no extension. An
+  impersonation session cannot outlive the debugging window; staff re-initiate if they need
+  longer.
+- **Every start and end writes `impersonation_audit_logs`** (`accounts.md` §2) — an internal,
+  staff-only trail (`impaudit_...`; action `started`/`ended`; `reason` captured at start). It
+  is NOT a customer/org audit log: it never appears in `user_audit_logs` or
+  `account_audit_logs` (`audit_logs.md`), and no customer-facing endpoint reads it.
+
+Guardrails: minted only through internal tooling (never a customer flow), gated on a support
+role we never grant customers; the console shows a persistent "You are impersonating {user}"
+banner; the session is filtered out of the customer's own sessions list (§3). Killing it is
+the same as any session (paths 2/3 of §3), and it self-expires within the hour regardless.

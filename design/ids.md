@@ -6,7 +6,7 @@
      the top one covers the whole document. Assistants: see ../CLAUDE.md. -->
 
 **Status:** living document (2026-07-14). Peeled from `architecture.md` §3, which now points
-here. Siblings: `architecture.md`, `schema.md`, `naming_conventions.md`. Background analysis:
+here. Siblings: `architecture.md`, `schema.md`, `conventions_naming.md`. Background analysis:
 `../reports/read/identifiers.md`.
 
 ---

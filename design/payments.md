@@ -106,7 +106,7 @@ product copy (ledger entry types like `promo` are internal terms).
 | sid                  | bigint      | identity; never exposed (ids.md §4) |
 | id                   | text PK     | `refill_...`                        |
 | account_id           | text FK     | UNIQUE → accounts (one rule)        |
-| enabled              | bool        |                                     |
+| is_enabled           | bool        |                                     |
 | threshold_micros     | bigint      | trigger when balance drops below    |
 | refill_amount_micros | bigint      | amount to charge                    |
 | payment_method_id    | text FK     | → payment_methods                   |
@@ -192,7 +192,8 @@ Card-on-file without a purchase: `mode=setup` Checkout Session (SetupIntent unde
 
 **Sign-off:** _unsigned_
 
-One endpoint: `POST /stripe/webhook` (not under `/v1` — Stripe-facing, signature-authed).
+One endpoint: `POST /stripe/webhook` (not under `/v1` — Stripe-facing, signature-authed),
+served by the **webhooks-inbound** service (`microservices.md` §1), not the api-gateway.
 Pipeline:
 
 1. Verify `Stripe-Signature` (endpoint secret; 5-min tolerance).
@@ -246,7 +247,7 @@ admission-check with the `max_tokens` worst-case estimate against balance minus 
 metered exposure — blocked with `402` if the worst case exceeds it — and a single
 `job_charge` written at completion with actuals.
 
-## 7. Console & API surface (already in api.md §8 — recap)
+## 7. Console & API surface (already in `api_misc.md` §5 — recap)
 
 **Sign-off:** _unsigned_
 

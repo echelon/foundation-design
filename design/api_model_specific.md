@@ -4,9 +4,9 @@
 <!-- bt: initials + date when approved (e.g. "bt 2026-07-05"). Per-section sign-offs below;
      the top one covers the whole document. Assistants: see ../CLAUDE.md. -->
 
-**Status:** living document (2026-07-14). Peeled from `api.md` §3. One of the three
+**Status:** living document (2026-07-14). Peeled from `api_overview.md` §3. One of the three
 generation planes: this doc (unified + granular), `api_any.md` (Any), `apis_llm.md` (chat).
-Shared conventions: `api.md` §1–§3.
+Shared conventions: `api_overview.md` §1–§3.
 
 ---
 
@@ -35,7 +35,7 @@ exactly what you meant; silently adjusting it would be a lie. (Any is the forgiv
 **Sign-off:** _unsigned_
 
 Model-specific invocation lives **on the model resource**, next to the catalog reads that
-describe it (`api.md` §6: `GET /v1/models/{model}`, `GET /v1/models/{model}/schema/{modality}`)
+describe it (`api_misc.md` §3: `GET /v1/models/{model}`, `GET /v1/models/{model}/schema/{modality}`)
 — read the schema and call the endpoint at the same path root:
 
 | Endpoint                                 | Method | Purpose                                                                              |
@@ -51,16 +51,16 @@ describe it (`api.md` §6: `GET /v1/models/{model}`, `GET /v1/models/{model}/sch
 **Model IDs:** the complete enumerated catalog — every slug, grouped per media type — is
 **`models.md` §2–§9** (also served live at `GET /v1/models`). The naming scheme/convention
 (`{owner}_{name}_{version}`, version tokens like `v2_5`, the reserved `_latest` /
-`_snap_{ver}` suffixes) is `models.md` §1 + §13, summarized in `naming_conventions.md` §3.
+`_snap_{ver}` suffixes) is `models.md` §1 + §13, summarized in `conventions_naming.md` §3.
 
 Alternatives considered:
 
-| Namespace                                  | Verdict                                                                                                            |
-| ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
-| `/v1/generate/models/{model}[/{modality}]` | Previous design (`api.md` §3) — RETIRED: buries the model resource under a verb; catalog reads then live elsewhere |
-| `/v1/run/{model}` (Fal-style)              | Terse, but `run` says nothing about cost twins, and Fal-flavored                                                   |
-| `/v1/predictions` (Replicate-style)        | Wrong noun for us (jobs), and model-in-body defeats the point                                                      |
-| **`/v1/models/{model}/generate[...]`**     | **RECOMMENDED** — invocation and introspection co-located on one resource                                          |
+| Namespace                                  | Verdict                                                                                                                     |
+| ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| `/v1/generate/models/{model}[/{modality}]` | Previous design (`api_overview.md` §3) — RETIRED: buries the model resource under a verb; catalog reads then live elsewhere |
+| `/v1/run/{model}` (Fal-style)              | Terse, but `run` says nothing about cost twins, and Fal-flavored                                                            |
+| `/v1/predictions` (Replicate-style)        | Wrong noun for us (jobs), and model-in-body defeats the point                                                               |
+| **`/v1/models/{model}/generate[...]`**     | **RECOMMENDED** — invocation and introspection co-located on one resource                                                   |
 
 ## 3. Request & response (media)
 
@@ -79,7 +79,7 @@ POST /v1/models/kling_video_v3_pro/generate/image_to_video
 
 No `model` field in the body — it's in the path (a body `model` that contradicts the path is
 a `400`). Media responses are always async: `201` + Job resource, then polling or webhook
-(`api.md` §3). Granular schemas come straight from the catalog's typed param structs — the
+(`api_overview.md` §3). Granular schemas come straight from the catalog's typed param structs — the
 same source that generates the docs pages, sandbox forms, and SDK types (`models.md`,
 `agents.md`): one schema, four surfaces, zero drift.
 

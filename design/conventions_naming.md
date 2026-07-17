@@ -7,7 +7,7 @@
 **Status:** living document (2026-07-14). Captures bt's conventions as practiced in ArtCraft
 (`~/dev/storyteller/artcraft`, `~/dev/storyteller/artcraft-dashboard`) plus the decisions
 already made in this design tree. Where Foundation deliberately diverges from ArtCraft, the
-divergence is called out. Sibling: `coding_conventions.md` (style/structure; this doc is
+divergence is called out. Sibling: `conventions_coding.md` (style/structure; this doc is
 names only).
 
 ---
@@ -47,7 +47,7 @@ snake_case (`job_completed`).
 | Money newtypes        | Unit-bearing names: `Micros`, `NanoUsd` (`crates/core/money`)                                                                                                                          |
 | Constructors          | `new`, `new_from_str`                                                                                                                                                                  |
 | Accessors/conversions | `as_str`, `to_str`, `from_str`, `all_variants`                                                                                                                                         |
-| Error enums           | Four-bucket taxonomy names: `{X}Error` (top), `{X}ClientError`, `{X}SpecificApiError`, `{X}GenericApiError`, plus a `classify_{x}_http_error` free fn (see `coding_conventions.md` §4) |
+| Error enums           | Four-bucket taxonomy names: `{X}Error` (top), `{X}ClientError`, `{X}SpecificApiError`, `{X}GenericApiError`, plus a `classify_{x}_http_error` free fn (see `conventions_coding.md` §4) |
 | HTTP handlers         | `{verb}_{noun}_handler.rs` under `endpoints/{domain}/` (ArtCraft: `get_session_credits_handler.rs`)                                                                                    |
 
 Serde: **explicit `#[serde(rename = "...")]` on every variant** (DECIDED — `enums.md`).
@@ -73,17 +73,17 @@ Authoritative grammar lives in `models.md` (§1 naming rules, §13 versioning). 
 
 **Sign-off:** _unsigned_
 
-| Thing            | Convention                                                                                                                                                                                 |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Table names      | plural `snake_case`: `jobs`, `ledger_entries`, `auto_refill_rules`                                                                                                                         |
-| Columns          | `snake_case`                                                                                                                                                                               |
-| Column order     | `sid` first, `id` second (`ids.md` §4), payload columns, timestamps last — `created_at` first among the timestamps (`coding_conventions.md` §7)                                            |
-| FK columns       | **include the referenced table's singular name**: `invited_by_user_id`, `created_by_user_id` — never bare roles (`invited_by`). `{table}_id` forms (`account_id`, `job_id`) already comply |
-| Timestamps       | `{event}_at`, `timestamptz`: `created_at`, `canceled_at`, `last_triggered_at`                                                                                                              |
-| Money            | `{name}_micros` (i64 micro-USD); catalog unit rates `{name}_nanos` (nano-USD)                                                                                                              |
-| Booleans         | `is_{adj}` (`is_default`) or bare enable-words (`enabled`)                                                                                                                                 |
-| Enum-ish columns | `text` + CHECK, values = canonical slugs; CHECK lists generated from Rust                                                                                                                  |
-| Counts/limits    | descriptive suffixes: `daily_max_micros`, `consecutive_failures`                                                                                                                           |
+| Thing            | Convention                                                                                                                                                                                                                                  |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Table names      | plural `snake_case`: `jobs`, `ledger_entries`, `auto_refill_rules`                                                                                                                                                                          |
+| Columns          | `snake_case`                                                                                                                                                                                                                                |
+| Column order     | `sid` first, `id` second (`ids.md` §4), payload columns, timestamps last — `created_at` first among the timestamps (`conventions_coding.md` §7)                                                                                             |
+| FK columns       | **include the referenced table's singular name**: `invited_by_user_id`, `created_by_user_id` — never bare roles (`invited_by`). `{table}_id` forms (`account_id`, `job_id`) already comply                                                  |
+| Timestamps       | **every row-metadata `timestamptz` ends in `_at`**: `created_at`, `canceled_at`, `run_at` (TIGHTENED 2026-07-17). Only exception: dimensional/key timestamps that are payload data — a rollup's `period_start` (`conventions_coding.md` §7) |
+| Money            | `{name}_micros` (i64 micro-USD); catalog unit rates `{name}_nanos` (nano-USD)                                                                                                                                                               |
+| Booleans         | **every `bool` column is `is_{foo}`**: `is_default`, `is_enabled`, `is_org_visible` (TIGHTENED 2026-07-17 — no bare enable-words like `enabled`, no `{x}_dismissed`/`{x}_truncated`)                                                        |
+| Enum-ish columns | `text` + CHECK, values = canonical slugs; CHECK lists generated from Rust                                                                                                                                                                   |
+| Counts/limits    | descriptive suffixes: `daily_max_micros`, `consecutive_failures`                                                                                                                                                                            |
 
 ## 5. ID prefixes
 
@@ -110,7 +110,7 @@ Registry and format rules: `ids.md` §5. Naming rules for new prefixes:
 | Headers        | `Title-Case` with product prefix: `Foundation-Version`, `Foundation-Signature`                                                                       |
 | Webhook events | dot-form on the wire: `job.completed`, `job.failed`                                                                                                  |
 | Query params   | `snake_case`; cursor pagination param is `after`                                                                                                     |
-| Error codes    | snake_case slugs (`insufficient_balance`, `spend_limit_exceeded`) — registry in `api.md` §2                                                          |
+| Error codes    | snake_case slugs (`insufficient_balance`, `spend_limit_exceeded`) — registry in `api_overview.md` §2                                                 |
 
 ## 7. TypeScript / frontend
 
@@ -123,7 +123,7 @@ Registry and format rules: `ids.md` §5. Naming rules for new prefixes:
 | Hooks                            | camelCase `use{Xxx}.ts`: `usePageTitle.ts`                                                                                                                      |
 | Props types                      | local `interface {Component}Props`                                                                                                                              |
 | Interfaces vs types              | `interface` preferred; `type` reserved for unions and small aliases                                                                                             |
-| Enums                            | API-boundary enums: string-literal unions generated from the OpenAPI spec (`enums.md`); hand-written `enum` permitted off the wire (`coding_conventions.md` §6) |
+| Enums                            | API-boundary enums: string-literal unions generated from the OpenAPI spec (`enums.md`); hand-written `enum` permitted off the wire (`conventions_coding.md` §6) |
 | DTO fields                       | `snake_case` (mirror the wire; see §6)                                                                                                                          |
 | Exports                          | named exports only; no default exports                                                                                                                          |
 | Path alias                       | `@/` → `src/`                                                                                                                                                   |
@@ -136,7 +136,7 @@ Registry and format rules: `ids.md` §5. Naming rules for new prefixes:
 - **One item per file** in Rust: each enum, error bucket, token, and handler gets its own
   file named after the item; `mod.rs` files are pure re-export lists.
 - Design docs and reports: `kebab-case.md` (`future-roadmap.md`, `end-users.md`) — this doc
-  and `coding_conventions.md` are grandfathered exceptions by explicit request.
+  and `conventions_coding.md` are grandfathered exceptions by explicit request.
 - Generated artifacts live under clearly-generated paths: `crates/core/enums/src/generated/`,
   `generated/llms/`, `frontend/libs/api-client/` (generated), `catalog.json`.
 

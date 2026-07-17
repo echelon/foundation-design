@@ -58,13 +58,21 @@ Rules for assistants:
 
 ## Schema naming conventions
 
-Full registries: `design/naming_conventions.md` (names) and `design/coding_conventions.md`
+Full registries: `design/conventions_naming.md` (names) and `design/conventions_coding.md`
 (style/structure). The rule below predates them and still applies:
 
 - **Foreign-key columns include the referenced table's name** (singular): `invited_by_user_id`,
   `accepted_by_user_id`, `created_by_user_id` — never bare role names like `invited_by` or
   `created_by`. Columns already of the form `{table}_id` (`account_id`, `user_id`, `job_id`,
   `payment_method_id`) are already correct. Applies to every design doc that declares tables.
+- **Every `bool` column is named `is_{foo}`** (2026-07-17): `is_default`, `is_enabled`,
+  `is_org_visible` — no bare enable-words (`enabled`), no `{x}_dismissed`/`{x}_truncated`.
+- **Every row-metadata `timestamptz` ends in `_at`** (2026-07-17): `created_at`, `canceled_at`,
+  `revoked_at`. Sole exception: dimensional/key timestamps that are payload data (a rollup's
+  `period_start`) — see `design/conventions_naming.md` §4 / `conventions_coding.md` §7.
+
+Full registries live in `design/conventions_naming.md` §4 (`conventions_coding.md` §7 for
+declaration order).
 
 ## Naming
 

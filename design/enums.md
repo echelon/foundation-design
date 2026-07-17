@@ -4,7 +4,7 @@
 <!-- bt: initials + date when approved (e.g. "bt 2026-07-05"). Per-section sign-offs below;
      the top one covers the whole document. Assistants: see ../CLAUDE.md. -->
 
-**Status:** living document (2026-07-05). Siblings: `architecture.md`, `api.md`, `schema.md`,
+**Status:** living document (2026-07-05). Siblings: `architecture.md`, `api_overview.md`, `schema.md`,
 `models.md`, `agents.md`. Practice review: `../reports/enums-alternatives.md`.
 
 ---
@@ -106,7 +106,7 @@ pub enum Model {
 Serializes as the bare slug (slugs are globally unique across media types — enforced by a
 compile-time test).
 
-## Supporting enums (the ones you'd forgotten — all referenced by schema.md/api.md)
+## Supporting enums (the ones you'd forgotten — all referenced by schema.md/api_overview.md)
 
 **Sign-off:** _unsigned_
 
@@ -123,25 +123,27 @@ leads.
 | `QueueStage`            | `at_our_gateway, at_provider` — naming OPEN                                                                                                                      | `jobs.md` §2                    |
 | `CanceledBy`            | `user, system, provider`                                                                                                                                         | `jobs.md` §4                    |
 | `JobEventType`          | `created, charged, dispatch_attempted, provider_accepted, poll_tick, provider_completed, output_ingested, webhook_sent, refunded, failed, canceled, expired`     | `jobs.md` §4                    |
-| `ApiShape`              | `granular, unified, any, chat`                                                                                                                                   | `api.md` §3                     |
+| `ApiShape`              | `granular, unified, any, chat`                                                                                                                                   | `api_overview.md` §3            |
 | `RequestSource`         | `api_key, dashboard, mcp` (`api` renamed `api_key`, 2026-07-14)                                                                                                  | `jobs.md` §4                    |
 | `LedgerEntryType`       | `topup, job_charge, job_refund, adjustment, promo, auto_refill, chargeback, chargeback_reversal`                                                                 | `payments.md` §2                |
 | `PriceUnit`             | `per_call, per_image, per_video_second, per_audio_second, per_megapixel, per_second_compute, per_million_tokens_in, per_million_tokens_out, per_mesh, per_splat` | catalog (`crates/core/catalog`) |
 | `QueueTaskType`         | `dispatch_job, poll_provider, ingest_outputs, deliver_webhook, settle_refund, auto_refill, rollup_usage, process_stripe_event`                                   | `schema.md` §3                  |
 | `QueueTaskStatus`       | `pending, running, done, dead`                                                                                                                                   | `schema.md` §3                  |
-| `WebhookEvent`          | `job_completed, job_failed` (wire form `job.completed`, `job.failed`)                                                                                            | `api.md` §10                    |
+| `WebhookEvent`          | `job_completed, job_failed` (wire form `job.completed`, `job.failed`)                                                                                            | `api_overview.md` §4            |
 | `AccountStatus`         | `active, suspended, closed`                                                                                                                                      | `accounts.md` §2                |
 | `MemberRole`            | `owner, admin, member` (`owner` added 2026-07-14 — exactly one per account; auth.md §4)                                                                          | `accounts.md` §2                |
 | `OutputKind`            | `image, video, audio, mesh, splat, text` (`thumbnail` REMOVED 2026-07-14 — thumbnails are derived files, not outputs)                                            | `files.md` §2                   |
 | `StorageClass`          | `hot, cold`                                                                                                                                                      | `files.md` §2                   |
-| `FilePurpose`           | `input, output, avatar` (+ `thumbnail` when files.md §4 lands)                                                                                                   | `files.md` §2                   |
+| `FilePurpose`           | `input, output` (+ `thumbnail` when files.md §4 lands; `avatar` DROPPED 2026-07-17 → `user_avatar_files`)                                                        | `files.md` §2                   |
 | `FileOrigin`            | `upload, mirrored_url, generated`                                                                                                                                | `files.md` §2                   |
 | `PaymentMethodStatus`   | `active, detached`                                                                                                                                               | `payments.md` §2                |
 | `SpendLimitWindow`      | `weekly, monthly`                                                                                                                                                | `payments.md` §2                |
 | `SsoProvider`           | `google, github`                                                                                                                                                 | `accounts.md` §2                |
 | `AvatarSource`          | `custom, gravatar, letter, generated`                                                                                                                            | `accounts.md` §2                |
-| `AuditEvent`            | 21 values, not mirrored here — dual-write matrix in the authority doc                                                                                            | `audit_logs.md` §3              |
+| `AvatarFileSource`      | `custom_upload, gravatar_mirror`                                                                                                                                 | `accounts.md` §2                |
+| `ImpersonationAction`   | `started, ended` (staff-only impersonation audit log)                                                                                                            | `accounts.md` §2                |
+| `AuditEvent`            | 28 values, not mirrored here — write matrix + `is_org_visible()` categorization in the authority doc (billing events added 2026-07-17)                           | `audit_logs.md` §3              |
 | `ProviderCallDirection` | `request, response, poll_request, poll_response, callback_in`                                                                                                    | `logging.md` §3                 |
-| `FailureCode`           | 14 values, not mirrored here (bt-editable) — hand-written enum with `category()`, `refunds_in_full()`, `is_customer_actionable()`                                | `api.md` §2                     |
-| `FailureCategory`       | `moderation, bad_input, provider, lifecycle, internal`                                                                                                           | `api.md` §2                     |
+| `FailureCode`           | 14 values, not mirrored here (bt-editable) — hand-written enum with `category()`, `refunds_in_full()`, `is_customer_actionable()`                                | `api_overview.md` §2            |
+| `FailureCategory`       | `moderation, bad_input, provider, lifecycle, internal`                                                                                                           | `api_overview.md` §2            |
 | `AuditTargetType`       | singular entity slugs (`api_key, member, invitation, …`) — one per schema.md §7 entity, generated from the prefix registry                                       | `audit_logs.md` §2              |

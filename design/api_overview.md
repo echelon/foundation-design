@@ -1,13 +1,17 @@
-# API Surface
+# API Overview (whole-API shape)
 
 **Sign-off:** _unsigned_
 <!-- bt: initials + date when approved (e.g. "bt 2026-07-05"). Per-section sign-offs below;
      the top one covers the whole document. Assistants: see ../CLAUDE.md. -->
 
-**Status:** living document (2026-07-05). Endpoints are split across TWO gateway binaries — `api-gateway` (the product) and `dashboard-gateway` (the console) — per `microservices.md`.
-Base URL placeholder: `https://api.example.dev`. Siblings: `architecture.md`, `schema.md`,
-`models.md`, `enums.md`, `logging.md`, `mcp.md`, `end-users.md`, `rankings.md` — and the
-generation planes: `api_any.md`, `api_model_specific.md`, `apis_llm.md`.
+**Status:** living document (2026-07-17). SPLIT from `api.md` (2026-07-17): this doc owns the
+conventions that apply to the WHOLE API surface — auth forms, versioning, the error envelope,
+generation-wide conventions, outbound webhook signing, reserved paths. Specific endpoint
+groups that have no home doc: `api_misc.md`. Endpoints are served across three ingress
+binaries per `microservices.md`. Base URL placeholder: `https://api.example.dev`. Siblings:
+`architecture.md`, `schema.md`, `models.md`, `enums.md`, `logging.md`, `mcp.md`,
+`end-users.md`, `rankings.md` — and the generation planes: `api_any.md`,
+`api_model_specific.md`, `apis_llm.md`.
 
 ---
 
@@ -34,6 +38,7 @@ generation planes: `api_any.md`, `api_model_specific.md`, `apis_llm.md`.
 | `Authorization: Bearer foundation_api_...`                             | Canonical; what OpenAI/Anthropic/OpenRouter trained everyone on |
 | `X-API-Key: foundation_api_...`                                        | Common in gateway/enterprise tooling (AWS-style)                |
 | `Authorization: Key foundation_api_...`                                | Fal's scheme — eases migration of Fal integrations              |
+| `Authorization: foundation_api_...`                                    | Bare key, which is simple and straightforward                   |
 | `curl -u foundation_api_...:` (Basic, key as username, empty password) | Stripe's curl ergonomics                                        |
 
 Note: You cannot use multiple forms at once, or the server will reject it.
@@ -77,6 +82,8 @@ One envelope for every non-2xx response:
 - `request_id` — correlates to the logs product.
 
 ### `FailureCode` — the generation-failure enum (user-facing; on failed jobs, not HTTP errors)
+
+**Sign-off:** _unsigned_
 
 `jobs.failure_code` — why a generation failed after acceptance. A proper first-class enum
 (PROMOTED 2026-07-14), hand-written in `crates/core/enums` with the usual explicit serde
@@ -126,7 +133,7 @@ impl FailureCode {
 - `refunds_in_full()` is true for every code except `canceled` after dispatch (policy TBD
   per provider — most upstreams charge us anyway).
 - The mapping FROM client errors: each provider client's `{X}SpecificApiError` bucket
-  (`coding_conventions.md` §3) maps onto these codes in `services/jobs` — classification is
+  (`conventions_coding.md` §3) maps onto these codes in `services/jobs` — classification is
   a client concern, `FailureCode` assignment is policy and lives in one exhaustive match.
 
 ## 3. Generation — shared conventions; the planes live in their own docs
@@ -191,79 +198,7 @@ Shared across every plane:
 "webhook": { "url": "https://customer.example/hook", "events": ["job.completed", "job.failed"] }
 ```
 
-## 4. Jobs
-
-**Sign-off:** _unsigned_
-
-**Moved to `jobs.md` (2026-07-05)** — endpoints, the status machine (internal + external),
-cancel/refund semantics, and the retry policy all live there. Jobs are the universal
-primitive; every generate call in §3 (and every LLM call in §5) produces one.
-
-## 5. LLM
-
-**Sign-off:** _unsigned_
-
-**Moved to `apis_llm.md` (2026-07-14):** the OpenAI-compatible `/v1/chat/completions` plane —
-param pass-through rules, response deltas (job ID as completion `id`), streaming, metered
-billing, and the reserved LLM paths.
-
-## 6. Catalog (read-only; served from the code catalog)
-
-**Sign-off:** _unsigned_
-
-| Endpoint                               | Method | Purpose                                        |
-| -------------------------------------- | ------ | ---------------------------------------------- |
-| `/v1/models`                           | GET    | Filter by media_type, owner, modality, status  |
-| `/v1/models/{model}`                   | GET    | Metadata, modalities, prices, deprecation info |
-| `/v1/models/{model}/schema/{modality}` | GET    | JSON Schema for that endpoint                  |
-
-## 7. Files
-
-**Sign-off:** _unsigned_
-
-| Endpoint         | Method | Purpose                                                |
-| ---------------- | ------ | ------------------------------------------------------ |
-| `/v1/files`      | POST   | Multipart upload → `file_...` usable in any input slot |
-| `/v1/files/{id}` | GET    | Metadata + CDN URL                                     |
-
-Inputs may also be plain HTTPS URLs (we mirror them to R2 before dispatch).
-Tables (`files` + `outputs`) and the storage/provenance split: **`files.md`**.
-(Naming analysis — files vs media vs artifacts: `../reports/read/files-naming.md`.)
-
-## 8. Billing & spend
-
-**Sign-off:** _unsigned_
-
-| Endpoint                      | Method          | Purpose                                                   |
-| ----------------------------- | --------------- | --------------------------------------------------------- |
-| `/v1/billing/balance`         | GET             | Current balance (micros + display)                        |
-| `/v1/billing/ledger`          | GET             | Ledger entries: topups, charges, refunds — the spend list |
-| `/v1/billing/usage`           | GET             | Rollups: spend by day / model / api key / end_user        |
-| `/v1/billing/topup`           | POST            | Create Stripe payment for a chosen amount                 |
-| `/v1/billing/payment-methods` | GET/POST/DELETE | Card on file management                                   |
-| `/v1/billing/auto-refill`     | GET/PUT         | Threshold, refill amount, daily max, enable/disable       |
-| `/v1/billing/spend-limits`    | GET/PUT         | Weekly/monthly caps (behavior: block)                     |
-
-"Show users what they've spent": `GET /v1/jobs` (each row: job, status, model, cost) is the
-per-job view; `/v1/billing/ledger` is the money view; `/v1/billing/usage` is the chart view.
-
-## 9. Account, team, keys
-
-**Sign-off:** _unsigned_
-
-| Endpoint                         | Method          | Purpose                                                                                                                         |
-| -------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `/v1/account`                    | GET/PATCH       | Account settings                                                                                                                |
-| `/v1/account/members`            | GET             | Team list                                                                                                                       |
-| `/v1/account/members/{id}`       | PATCH/DELETE    | Role change, removal                                                                                                            |
-| `/v1/account/invitations`        | GET/POST/DELETE | Invite teammates                                                                                                                |
-| `/v1/api-keys`                   | GET/POST        | Create: `title` (immutable), `description`, `expires_at?` — `foundation_api_...` secret shown once                              |
-| `/v1/api-keys/{id}`              | PATCH/DELETE    | PATCH edits description only; DELETE = revoke                                                                                   |
-| `/v1/webhook-secret`             | GET/POST        | View/rotate `foundation_whsec_...` (two active during rotation)                                                                 |
-| `/v1/auth/{signup,login,logout}` | POST            | Console session auth (`auth.md`; full auth surface: `accounts.md` §6 — login_methods, sessions, audit logs, ownership transfer) |
-| `/v1/auth/password-reset`        | POST            | Token flow                                                                                                                      |
-
-## 10. Outbound webhooks (us → customer)
+## 4. Outbound webhooks (us → customer)
 
 **Sign-off:** _unsigned_
 
@@ -283,23 +218,11 @@ is stdlib-only for customers, and revocation is per-account. (Comparison recorde
 - Retries: exponential backoff, ~8 attempts over 24h; every attempt + customer response logged
   and visible in `/v1/jobs/{id}/logs`.
 
-## 11. MCP
+Delivery is the worker's `deliver_webhook` task; these are OUTBOUND (us → customers). Inbound
+partner webhooks (Stripe et al. → us) are a different surface entirely, served by the
+`webhooks-inbound` binary (`microservices.md` §1).
 
-**Sign-off:** _unsigned_
-
-`/mcp` — streamable-HTTP MCP endpoint mounted in api-gateway; tools mirror this API
-(generate/cost/jobs/models). Full design: `mcp.md`.
-
-## 12. Public (unauthenticated)
-
-**Sign-off:** _unsigned_
-
-| Endpoint              | Method | Purpose                                              |
-| --------------------- | ------ | ---------------------------------------------------- |
-| `/v1/public/rankings` | GET    | Aggregated model usage stats (see `rankings.md`)     |
-| `/llms.txt`           | GET    | Redirect to docs-domain agent docs (see `agents.md`) |
-
-## 13. Reserved, not built
+## 5. Reserved, not built
 
 **Sign-off:** _unsigned_
 

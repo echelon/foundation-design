@@ -8,7 +8,7 @@
 `../reports/read/jobs-design-considerations.md` per bt; the still-open items are analyzed in
 `../reports/jobs-design-considerations-2.md`. Owns the jobs tables (moved from `schema.md`
 §2) and the jobs API (moved from `api.md` §4); outputs moved onward to `files.md`
-(2026-07-14). Siblings: `schema.md`, `api.md`, `payments.md`, `logging.md`, `files.md`.
+(2026-07-14). Siblings: `schema.md`, `api_overview.md`, `api_misc.md`, `payments.md`, `logging.md`, `files.md`.
 
 Decided so far (bt, 2026-07-05):
 
@@ -183,7 +183,7 @@ saying whose queue, and metadata saying why it's still there.
 | status               | text        | enum, see §2                                                                                                                            |
 | queue_stage          | text        | enum, see §2; null unless status = `queued` (naming OPEN)                                                                               |
 | dispatch_attempts    | int         | dispatch tries so far (429/backoff visibility)                                                                                          |
-| failure_code         | text        | null; enum owned by `api.md` §2 (bt-editable list)                                                                                      |
+| failure_code         | text        | null; enum owned by `api_overview.md` §2 (bt-editable list)                                                                             |
 | failure_message      | text        | null; human-readable                                                                                                                    |
 | canceled_by          | text        | null; enum, see below                                                                                                                   |
 | provider             | text        | catalog provider slug, e.g. `bytedance` (`enums.md` Provider)                                                                           |
@@ -220,7 +220,7 @@ This table IS the customer spend list: job + status + cost in one row.
 | `status`       | `queued, running, succeeded, failed, canceled, expired`                                                                   |
 | `queue_stage`  | `at_our_gateway, at_provider` (naming OPEN with the two-stage question, §2)                                               |
 | `canceled_by`  | `user, system, provider` — user hit cancel; we canceled (suspension, policy, ops); upstream canceled it out from under us |
-| `failure_code` | owned by `api.md` §2 (`content_policy_input`, `provider_capacity`, …) — bt-editable                                       |
+| `failure_code` | owned by `api_overview.md` §2 (`content_policy_input`, `provider_capacity`, …) — bt-editable                              |
 | `modality`     | owned by `models.md` §11                                                                                                  |
 | `provider`     | owned by `enums.md` (dispatch targets)                                                                                    |
 
@@ -253,7 +253,7 @@ zero or more outputs.
 
 **Sign-off:** _unsigned_
 
-Moved from `api.md` §4 (2026-07-05). Conventions (auth, pagination, errors) stay in `api.md`.
+Moved from `api.md` §4 (2026-07-05). Conventions (auth, pagination, errors) stay in `api_overview.md`.
 
 | Endpoint                   | Method | Purpose                                                                                                                                                |
 | -------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |

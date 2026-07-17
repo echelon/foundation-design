@@ -70,7 +70,7 @@ override-what-you-test; no SQL dump files. Rules:
 
 - **Imported as a dev-dependency by any crate** — DB integration tests can live anywhere,
   next to the code they test. (The no-SQL-outside-`db/queries` rule is production-code only:
-  `coding_conventions.md` §4.)
+  `conventions_coding.md` §4.)
 - **It contains no SQL of its own** — it creates rows by calling `db/queries` functions
   (and `services/*` where a flow, not a row, is the fixture), so fixtures exercise the same
   code paths production uses and schema drift breaks loudly.

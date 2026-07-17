@@ -5,9 +5,9 @@
 <!-- bt: initials + date when approved (e.g. "bt 2026-07-05"). Per-section sign-offs below;
      the top one covers the whole document. Assistants: see ../CLAUDE.md. -->
 
-**Status:** living document (2026-07-14). Peeled from `api.md` §3. One of the three
+**Status:** living document (2026-07-14). Peeled from `api_overview.md` §3. One of the three
 generation planes: this doc (Any), `apis_llm.md` (chat), `api_model_specific.md`
-(unified + granular). Shared conventions: `api.md` §1–§3. Brand: **the Any API** — DECIDED
+(unified + granular). Shared conventions: `api_overview.md` §1–§3. Brand: **the Any API** — DECIDED
 2026-07-05, "omni" expunged (`../reports/read/omni-api-naming.md`).
 
 ---
@@ -64,7 +64,7 @@ POST /v1/any/video
 }
 ```
 
-Media responses are **always async**: `201` + the Job resource (`api.md` §3), results by
+Media responses are **always async**: `201` + the Job resource (`api_overview.md` §3), results by
 polling `/v1/jobs/{id}` or webhook — never a held-open call (DECIDED 2026-07-05,
 `../reports/sync-apis.md`). `param_adjustments` rides along in the 201 body.
 
