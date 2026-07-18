@@ -104,6 +104,11 @@ Database tests are **annotated** so they're selectable as a set:
 
 **Sign-off:** _unsigned_
 
+**NB (2026-07-17):** the `test` *environment* is CI-only; local `cargo test` runs in the `dev`
+environment against a `_test`-named local database — the distinction lives in
+`environments.md` §5. The safety checks below key off the database name, never the
+environment slug.
+
 **Configuration** — one env var, easy to set, impossible to confuse with production:
 
 - `FOUNDATION_TEST_DATABASE_URL` — read by tests **exclusively**. Tests never read

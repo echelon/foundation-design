@@ -9,7 +9,7 @@ interactive playground, model-specific documentation, example outputs (gallery),
 changelog. **ABSORBED `model-pages.md` (2026-07-17)** — bt asked whether model pages should
 merge into the frontend docs; yes: everything in that draft was frontend, and the URL question
 (§2) had to be answered here anyway. Siblings: `frontend_overview.md`, `frontend_docs.md`,
-`models.md` (catalog authority), `agents.md` (llms.txt), `rankings.md`.
+`models.md` (catalog authority), `agents_and_mcp.md` (llms.txt), `rankings.md`.
 
 ---
 
@@ -82,7 +82,7 @@ from marketing → model page → docs.
 | ---------------------------------------- | ------------------------------------------------------------------------------------------- |
 | `example.com/models`                     | Catalog index: filter by media type, modality, owner, price; comparison view                |
 | `example.com/models/{model_id}`          | THE model page (all sections above, anchored: `#gallery`, `#api`, `#pricing`, `#changelog`) |
-| `example.com/models/{model_id}/llms.txt` | Agent-docs sibling (`agents.md`)                                                            |
+| `example.com/models/{model_id}/llms.txt` | Agent-docs sibling (`agents_and_mcp.md`)                                                    |
 | `example.com/generate/{media}`           | The Any-API per-media guides with the cross-model comparison matrix                         |
 
 One page per model (not per modality — modalities are sections/tabs within it), matching the

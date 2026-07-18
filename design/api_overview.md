@@ -9,7 +9,7 @@ conventions that apply to the WHOLE API surface — auth forms, versioning, the 
 generation-wide conventions, outbound webhook signing, reserved paths. Specific endpoint
 groups that have no home doc: `api_misc.md`. Endpoints are served across three ingress
 binaries per `microservices.md`. Base URL placeholder: `https://api.example.com`. Siblings:
-`architecture.md`, `schema.md`, `models.md`, `enums.md`, `logging.md`, `mcp.md`,
+`architecture.md`, `schema.md`, `models.md`, `enums.md`, `logging.md`, `agents_and_mcp.md`,
 `end_users.md`, `rankings.md` — and the generation planes: `api_any.md`,
 `api_model_specific.md`, `apis_llm.md`.
 
@@ -23,7 +23,7 @@ binaries per `microservices.md`. Base URL placeholder: `https://api.example.com`
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Auth (API)     | Canonical: `Authorization: Bearer foundation_api_...`, `source=api_key` — three more accepted forms below                                                                      |
 | Auth (console) | Session cookie; same endpoints, `source=dashboard` recorded on jobs                                                                                                            |
-| Auth (MCP)     | Same API keys via the MCP transport; `source=mcp` recorded (see `mcp.md`)                                                                                                      |
+| Auth (MCP)     | Same API keys via the MCP transport; `source=mcp` recorded (see `agents_and_mcp.md`)                                                                                           |
 | Versioning     | Date version pinned per account; override header `Foundation-Version: 2026-07-04`                                                                                              |
 | Idempotency    | `Idempotency-Key` header on POSTs; 24h replay window per account                                                                                                               |
 | Sync mode      | **None for media** (DECIDED 2026-07-05) — polling + webhooks only; see `../reports/sync-apis.md`. LLM chat is inherently held-open (that's not a "sync mode", it's the medium) |

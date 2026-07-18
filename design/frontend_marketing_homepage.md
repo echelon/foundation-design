@@ -25,7 +25,7 @@ via proxy — that path prefix is reserved and never served by this app), `ranki
 | `/blog/...`                      | Announcements / model launches (each new catalog model is a launch post opportunity)                                               |
 
 Reserved on the apex, served by OTHER targets via proxy (`frontend_overview.md` §2):
-`/models/*` and `/generate/*` (playground), `/llms.txt` (agents.md redirect).
+`/models/*` and `/generate/*` (playground), `/llms.txt` (agents_and_mcp.md redirect).
 
 ## 2. Conventions
 

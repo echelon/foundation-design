@@ -8,7 +8,7 @@
 developer-facing that is NOT a model page: guides, API reference, integration recipes.
 Model-specific documentation (params, examples, pricing, gallery, playground) lives on the
 model pages (`frontend_playground.md`) — this app links there, never duplicates. Siblings:
-`frontend_overview.md`, `agents.md` (agent-readable docs), `api_overview.md`, `api_misc.md`.
+`frontend_overview.md`, `agents_and_mcp.md` (agent-readable docs), `api_overview.md`, `api_misc.md`.
 
 ---
 
@@ -27,7 +27,7 @@ model pages (`frontend_playground.md`) — this app links there, never duplicate
 | `/guides/files`          | Uploads, URL inputs, output hosting (`api_misc.md` §4, `files.md`)                                            |
 | `/guides/any-api`        | The Any plane: cross-model requests, coercion (`api_any.md`)                                                  |
 | `/guides/chat`           | OpenAI-compatible chat plane, migration notes (`apis_llm.md`)                                                 |
-| `/guides/mcp`            | MCP endpoint + tool list (`mcp.md`)                                                                           |
+| `/guides/mcp`            | MCP endpoint + tool list (`agents_and_mcp.md` §6–§7)                                                          |
 | `/guides/end-users`      | The `end_user` attribution param (`end_users.md`)                                                             |
 | `/reference/...`         | Generated API reference from the utoipa OpenAPI spec — one page per endpoint group                            |
 | `/changelog`             | Platform changelog: API versions (date pins), new endpoint groups; model-level changelogs stay on model pages |
@@ -41,6 +41,6 @@ model pages (`frontend_playground.md`) — this app links there, never duplicate
 - Every code sample compiles/runs in CI where feasible (snippets extracted and executed
   against a test account — the ArtCraft "docs that lie are worse than no docs" lesson).
 - Agent docs (`llms.txt`, `llms-full.txt`) are generated siblings, same content pipeline
-  (`agents.md`); the human docs and agent docs never diverge.
+  (`agents_and_mcp.md`); the human docs and agent docs never diverge.
 - 100% public, no login wall (same rule as model pages).
 - Search: static index (pagefind-style) — no external search service dependency at launch.

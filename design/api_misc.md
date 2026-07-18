@@ -89,13 +89,13 @@ per-job view; `/v1/billing/ledger` is the money view; `/v1/billing/usage` is the
 **Sign-off:** _unsigned_
 
 `/mcp` — streamable-HTTP MCP endpoint mounted in api-gateway; tools mirror this API
-(generate/cost/jobs/models). Full design: `mcp.md`.
+(generate/cost/jobs/models). Full design: `agents_and_mcp.md` §6–§9.
 
 ## 8. Public (unauthenticated)
 
 **Sign-off:** _unsigned_
 
-| Endpoint              | Method | Purpose                                              |
-| --------------------- | ------ | ---------------------------------------------------- |
-| `/v1/public/rankings` | GET    | Aggregated model usage stats (see `rankings.md`)     |
-| `/llms.txt`           | GET    | Redirect to docs-domain agent docs (see `agents.md`) |
+| Endpoint              | Method | Purpose                                                      |
+| --------------------- | ------ | ------------------------------------------------------------ |
+| `/v1/public/rankings` | GET    | Aggregated model usage stats (see `rankings.md`)             |
+| `/llms.txt`           | GET    | Redirect to docs-domain agent docs (see `agents_and_mcp.md`) |

@@ -5,8 +5,8 @@
      the top one covers the whole document. Assistants: see ../CLAUDE.md. -->
 
 **Status:** living document. Split out of `../2026-07/2026-07-04-initial-build.md` on 2026-07-04.
-Siblings: `api_overview.md`, `api_misc.md`, `schema.md`, `ids.md`, `models.md`, `enums.md`, `agents.md`, `logging.md`,
-`mcp.md`, `end_users.md`, `rankings.md`, `conventions_naming.md`, `conventions_coding.md`.
+Siblings: `api_overview.md`, `api_misc.md`, `schema.md`, `ids.md`, `models.md`, `enums.md`, `agents_and_mcp.md`, `logging.md`,
+`end_users.md`, `rankings.md`, `environments.md`, `conventions_naming.md`, `conventions_coding.md`.
 
 ---
 
@@ -157,10 +157,10 @@ foundation/
 │   │   ├── webhooks/               # outbound delivery + HMAC signing
 │   │   └── logging/                # debug-log product write path (see logging.md)
 │   ├── tools/
-│   │   └── docgen/                 # agent-docs generator (see agents.md)
+│   │   └── docgen/                 # agent-docs generator (see agents_and_mcp.md)
 │   └── queue/                      # queue abstraction (Postgres impl now)
 ├── generated/
-│   └── llms/                       # checked-in agent docs (see agents.md)
+│   └── llms/                       # checked-in agent docs (see agents_and_mcp.md)
 ├── frontend/                       # Nx workspace → Netlify
 │   ├── apps/
 │   │   ├── www/                    # marketing (+ public rankings page, see rankings.md)

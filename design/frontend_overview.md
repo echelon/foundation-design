@@ -89,3 +89,7 @@ The authoritative lists live in `conventions_coding.md` §6 (style/structure) an
 - **Deploys are independent:** a marketing copy change never redeploys the dashboard; a
   catalog merge rebuilds `playground` + `docs` (and `www` pricing) via the catalog.json CI
   trigger, not the dashboard.
+- **Environment-aware, first-class** (`environments.md`): every app knows its environment and
+  its target; local dev apps run on hard-coded `localhost:3xxx` ports and can be pointed at
+  localhost, staging, or production backends at startup. Production Netlify sites are locked —
+  builds run automatically, a human promotes.

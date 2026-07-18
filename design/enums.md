@@ -5,7 +5,7 @@
      the top one covers the whole document. Assistants: see ../CLAUDE.md. -->
 
 **Status:** living document (2026-07-05). Siblings: `architecture.md`, `api_overview.md`, `schema.md`,
-`models.md`, `agents.md`. Practice review: `../reports/enums-alternatives.md`.
+`models.md`, `agents_and_mcp.md`. Practice review: `../reports/enums-alternatives.md`.
 
 ---
 
@@ -19,7 +19,7 @@
 | Rust       | `crates/core/catalog`                 | Attaches metadata to the model/provider enums: display names, modalities, schemas, prices, routes. Registry is keyed BY the enums; compile-time completeness checks |
 | Database   | `text` columns + CHECK constraints    | Never native Postgres enums (see `../reports/postgresql-column-types.md`); CHECK lists are generated from the Rust enums by a migration-lint test                   |
 | TypeScript | `frontend/libs/api-client/src/enums/` | **Generated, never hand-written** — codegen from the utoipa OpenAPI spec (enums come out as string-literal unions). A CI diff check keeps it fresh                  |
-| Agent docs | `generated/llms/`                     | Rendered from the same catalog registry (see `agents.md`)                                                                                                           |
+| Agent docs | `generated/llms/`                     | Rendered from the same catalog registry (see `agents_and_mcp.md`)                                                                                                   |
 
 Serialized form of every variant = the canonical slug (`[a-z0-9_]`), identical across wire,
 DB, TS, and docs.
@@ -147,3 +147,4 @@ leads.
 | `FailureCode`           | 14 values, not mirrored here (bt-editable) — hand-written enum with `category()`, `refunds_in_full()`, `is_customer_actionable()`                                | `api_overview.md` §2            |
 | `FailureCategory`       | `moderation, bad_input, provider, lifecycle, internal`                                                                                                           | `api_overview.md` §2            |
 | `AuditTargetType`       | singular entity slugs (`api_key, member, invitation, …`) — one per schema.md §7 entity, generated from the prefix registry                                       | `audit_logs.md` §2              |
+| `Environment`           | `dev, stage, prod, test` — first-class in every frontend + backend                                                                                               | `environments.md` §1            |

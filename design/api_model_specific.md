@@ -81,7 +81,7 @@ No `model` field in the body — it's in the path (a body `model` that contradic
 a `400`). Media responses are always async: `201` + Job resource, then polling or webhook
 (`api_overview.md` §3). Granular schemas come straight from the catalog's typed param structs — the
 same source that generates the docs pages, sandbox forms, and SDK types (`models.md`,
-`agents.md`): one schema, four surfaces, zero drift.
+`agents_and_mcp.md`): one schema, four surfaces, zero drift.
 
 ## 4. LLMs on this plane — synchronous
 
