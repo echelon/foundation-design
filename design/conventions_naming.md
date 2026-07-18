@@ -73,17 +73,17 @@ Authoritative grammar lives in `models.md` (§1 naming rules, §13 versioning). 
 
 **Sign-off:** _unsigned_
 
-| Thing            | Convention                                                                                                                                                                                                                                  |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Table names      | plural `snake_case`: `jobs`, `ledger_entries`, `auto_refill_rules`                                                                                                                                                                          |
-| Columns          | `snake_case`                                                                                                                                                                                                                                |
-| Column order     | `sid` first, `id` second (`ids.md` §4), payload columns, timestamps last — `created_at` first among the timestamps (`conventions_coding.md` §7)                                                                                             |
-| FK columns       | **include the referenced table's singular name**: `invited_by_user_id`, `created_by_user_id` — never bare roles (`invited_by`). `{table}_id` forms (`account_id`, `job_id`) already comply                                                  |
-| Timestamps       | **every row-metadata `timestamptz` ends in `_at`**: `created_at`, `canceled_at`, `run_at` (TIGHTENED 2026-07-17). Only exception: dimensional/key timestamps that are payload data — a rollup's `period_start` (`conventions_coding.md` §7) |
-| Money            | `{name}_micros` (i64 micro-USD); catalog unit rates `{name}_nanos` (nano-USD)                                                                                                                                                               |
-| Booleans         | **every `bool` column is `is_{foo}`**: `is_default`, `is_enabled`, `is_org_visible` (TIGHTENED 2026-07-17 — no bare enable-words like `enabled`, no `{x}_dismissed`/`{x}_truncated`)                                                        |
-| Enum-ish columns | `text` + CHECK, values = canonical slugs; CHECK lists generated from Rust                                                                                                                                                                   |
-| Counts/limits    | descriptive suffixes: `daily_max_micros`, `consecutive_failures`                                                                                                                                                                            |
+| Thing            | Convention                                                                                                                                                                                                                                    |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Table names      | plural `snake_case`: `jobs`, `ledger_entries`, `auto_refill_rules`                                                                                                                                                                            |
+| Columns          | `snake_case`                                                                                                                                                                                                                                  |
+| Column order     | `sid` first, `id` second (`ids.md` §4), payload columns, timestamps last — `created_at` first among the timestamps (`conventions_database.md` §3)                                                                                             |
+| FK columns       | **include the referenced table's singular name**: `invited_by_user_id`, `created_by_user_id` — never bare roles (`invited_by`). `{table}_id` forms (`account_id`, `job_id`) already comply                                                    |
+| Timestamps       | **every row-metadata `timestamptz` ends in `_at`**: `created_at`, `canceled_at`, `run_at` (TIGHTENED 2026-07-17). Only exception: dimensional/key timestamps that are payload data — a rollup's `period_start` (`conventions_database.md` §3) |
+| Money            | `{name}_micros` (i64 micro-USD); catalog unit rates `{name}_nanos` (nano-USD)                                                                                                                                                                 |
+| Booleans         | **every `bool` column is `is_{foo}`**: `is_default`, `is_enabled`, `is_org_visible` (TIGHTENED 2026-07-17 — no bare enable-words like `enabled`, no `{x}_dismissed`/`{x}_truncated`)                                                          |
+| Enum-ish columns | `text` + CHECK, values = canonical slugs; CHECK lists generated from Rust                                                                                                                                                                     |
+| Counts/limits    | descriptive suffixes: `daily_max_micros`, `consecutive_failures`                                                                                                                                                                              |
 
 ## 5. ID prefixes
 
@@ -127,7 +127,7 @@ Registry and format rules: `ids.md` §5. Naming rules for new prefixes:
 | DTO fields                       | `snake_case` (mirror the wire; see §6)                                                                                                                          |
 | Exports                          | named exports only; no default exports                                                                                                                          |
 | Path alias                       | `@/` → `src/`                                                                                                                                                   |
-| Nx app names                     | lowercase single words: `www`, `docs`, `console`                                                                                                                |
+| Nx app names                     | lowercase single words: `www, dashboard, playground, docs` (REVISED 2026-07-17 — `frontend_overview.md` §1)                                                     |
 
 ## 8. Files & repo layout
 
@@ -135,7 +135,7 @@ Registry and format rules: `ids.md` §5. Naming rules for new prefixes:
 
 - **One item per file** in Rust: each enum, error bucket, token, and handler gets its own
   file named after the item; `mod.rs` files are pure re-export lists.
-- Design docs and reports: `kebab-case.md` (`future-roadmap.md`, `end-users.md`) — this doc
+- Design docs and reports: `kebab-case.md` (`future_roadmap.md`, `end_users.md`) — this doc
   and `conventions_coding.md` are grandfathered exceptions by explicit request.
 - Generated artifacts live under clearly-generated paths: `crates/core/enums/src/generated/`,
   `generated/llms/`, `frontend/libs/api-client/` (generated), `catalog.json`.

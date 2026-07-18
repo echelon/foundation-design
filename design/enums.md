@@ -75,7 +75,7 @@ tencent
   omitted `bfl`/`worldlabs`): `openai google bytedance kling bfl xai anthropic vidu
   worldlabs`.
 - **No aggregator variants (FIXED 2026-07-14):** `fal` / `replicate` removed — providers.md
-  and `future-roadmap.md` §7 rule: we never route through aggregators, we compete with
+  and `future_roadmap.md` §7 rule: we never route through aggregators, we compete with
   them. A variant here means "we hold credentials and wrote a client crate," and no such
   crate will exist. (Model slugs never encoded routing anyway, so a future direct
   integration of a long-tail model is purely additive.)

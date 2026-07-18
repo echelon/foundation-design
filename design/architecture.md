@@ -6,7 +6,7 @@
 
 **Status:** living document. Split out of `../2026-07/2026-07-04-initial-build.md` on 2026-07-04.
 Siblings: `api_overview.md`, `api_misc.md`, `schema.md`, `ids.md`, `models.md`, `enums.md`, `agents.md`, `logging.md`,
-`mcp.md`, `end-users.md`, `rankings.md`, `conventions_naming.md`, `conventions_coding.md`.
+`mcp.md`, `end_users.md`, `rankings.md`, `conventions_naming.md`, `conventions_coding.md`.
 
 ---
 
@@ -20,7 +20,7 @@ Siblings: `api_overview.md`, `api_misc.md`, `schema.md`, `ids.md`, `models.md`, 
 | Database         | **Postgres** (DECIDED 2026-07-04)         | Managed on DigitalOcean; gotcha checklist in §9               |
 | Cache / hot path | Redis (DO managed Valkey/Redis)           | Rate limiting, session cache                                  |
 | Object storage   | **Cloudflare R2** (DECIDED)               | Zero egress — we host media forever (§8)                      |
-| Frontend hosting | **Netlify** (DECIDED)                     | All three Nx apps                                             |
+| Frontend hosting | **Netlify** (DECIDED)                     | All four Nx apps (`frontend_overview.md` §1)                  |
 | Compute hosting  | **DigitalOcean** (DECIDED)                | No AWS. Droplets or App Platform for the gateways + worker    |
 | Job queue        | Postgres (`FOR UPDATE SKIP LOCKED`)       | Swappable later (NATS JetStream is the leading candidate)     |
 | Billing          | Stripe via `async-stripe`                 |                                                               |
@@ -49,7 +49,7 @@ catalog IS the product. This replaces the earlier draft's `providers` / `models`
 - Price changes, new models, deprecations = normal PRs + deploys. Jobs snapshot the price they
   were charged onto the job row (see `schema.md`), so history survives code changes and no
   historical price table is needed.
-- The docs/console frontends consume a **generated JSON artifact** (`catalog.json`) emitted by
+- The public/dashboard frontends consume a **generated JSON artifact** (`catalog.json`) emitted by
   a build step from the same registry — single source of truth, no DB round trip.
 - Provider credentials are config/environment (per-deployment secrets with named pools, e.g.
   ByteDance `volcengine` / `byteplus` / `byteplus_ultra`), not DB rows.
@@ -164,8 +164,9 @@ foundation/
 ├── frontend/                       # Nx workspace → Netlify
 │   ├── apps/
 │   │   ├── www/                    # marketing (+ public rankings page, see rankings.md)
-│   │   ├── docs/                   # model pages + sandbox + API docs (reads catalog.json)
-│   │   └── console/                # keys, billing, jobs, logs, team
+│   │   ├── dashboard/              # account console: keys, billing, jobs, logs, team
+│   │   ├── playground/             # model pages + playground (reads catalog.json)
+│   │   └── docs/                   # guides + API reference (frontend_docs.md)
 │   └── libs/
 │       ├── ui/
 │       ├── api-client/             # generated from our OpenAPI

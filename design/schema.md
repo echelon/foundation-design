@@ -5,7 +5,7 @@
      the top one covers the whole document. Assistants: see ../CLAUDE.md. -->
 
 **Status:** living document (2026-07-05). Postgres. Siblings: `architecture.md`, `api_overview.md`, `api_misc.md`,
-`models.md`, `enums.md`, `jobs.md`, `files.md`, `logging.md`, `end-users.md`, `rankings.md`.
+`models.md`, `enums.md`, `jobs.md`, `files.md`, `logging.md`, `end_users.md`, `rankings.md`.
 
 This doc owns only the tables no sibling claims. Every table defined in a sibling doc appears
 here **only** as a pointer (§7) — never duplicated.
@@ -28,6 +28,9 @@ Conventions:
   generated from Rust.
 - High-volume log tables live in `logging.md`; public-rankings rollup tables live in
   `rankings.md`; the pointer index is §7.
+- **`FK` in these docs is a logical reference — no actual FK constraints, no triggers**
+  (DECIDED 2026-07-17); integrity lives in code. Full DB conventions:
+  `conventions_database.md`.
 
 ---
 
@@ -40,7 +43,7 @@ Google + GitHub), account_members, invitations (now code + magic link), sessions
 email_verifications, password_resets — plus the signup, invite, and identity-linking flows.
 What remains in this section:
 
-### end_users  (`enduser_`) — our customers' customers (DECIDED 2026-07-05; see `end-users.md`)
+### end_users  (`enduser_`) — our customers' customers (DECIDED 2026-07-05; see `end_users.md`)
 
 **Sign-off:** _unsigned_
 
@@ -223,4 +226,4 @@ outline; a table missing here doesn't exist.
 |                   | account_audit_logs       | `aaudit_`   | `audit_logs.md` §2            |
 |                   | impersonation_audit_logs | `impaudit_` | `accounts.md` §2 (staff-only) |
 | Rollups           | usage_rollups            | `roll_`     | `rankings.md` §2              |
-| Future (reserved) | end_user_limits          | `eulimit_`  | `end-users.md` (not built)    |
+| Future (reserved) | end_user_limits          | `eulimit_`  | `end_users.md` (not built)    |

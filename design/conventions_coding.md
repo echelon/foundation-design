@@ -4,10 +4,10 @@
 <!-- bt: initials + date when approved (e.g. "bt 2026-07-05"). Per-section sign-offs below;
      the top one covers the whole document. Assistants: see ../CLAUDE.md. -->
 
-**Status:** living document (2026-07-14). Style and structure rules for the Rust and
-TypeScript codebases, mined from ArtCraft practice plus decisions in this tree. Sibling:
-`conventions_naming.md` (names only; this doc is everything else). Test conventions:
-`testing.md`.
+**Status:** living document (2026-07-17). Style and structure rules for the Rust and
+TypeScript codebases, mined from ArtCraft practice plus decisions in this tree. Siblings:
+`conventions_naming.md` (names), `conventions_database.md` (DB declaration + integrity rules,
+split out 2026-07-17). Test conventions: `testing.md`.
 
 ---
 
@@ -148,18 +148,14 @@ Full strategy in `testing.md`; style rules here:
 - State: local `useState` first, React Context for cross-cutting concerns (auth, theme);
   reach for a store (Zustand) only when an app demonstrably needs one.
 
-## 7. Schema declaration style
+## 7. Database
 
 **Sign-off:** _unsigned_
 
-- **`created_at` always sorts above the other timestamp columns** in a table declaration
-  (then `updated_at`/event timestamps in whatever order reads best). Dimensional timestamps
-  that are part of a table's key (e.g. a rollup's `period_start`) are data, not row
-  metadata, and stay with the payload columns.
-- Column order overall: `sid`, `id`, FKs, payload, timestamps (`ids.md` §4,
-  `conventions_naming.md` §4).
-- Every design-doc table lists a `null?` column; nullability is decided at design time, not
-  at migration time.
+**Moved to `conventions_database.md` (2026-07-17):** schema declaration style (column order,
+`created_at` first among timestamps, design-time nullability) plus the integrity-in-code
+rules — **no database triggers, no actual FK constraints** — and the type/operational
+conventions.
 
 ## 8. Review checklist (the recurring catches)
 
@@ -170,5 +166,7 @@ Full strategy in `testing.md`; style rules here:
   point (`../reports/model-enums-expanded-considerations.md`).
 - A hand-written thing that should be generated (TS enum, CHECK list, agent doc).
 - SQL or reqwest in a layer that shouldn't see it.
+- A `CREATE TRIGGER` or `REFERENCES` clause in a migration — integrity lives in code
+  (`conventions_database.md` §1).
 - `unwrap` on a fallible path; a swallowed error without a `error!`/`warn!` log.
 - An unpadded markdown table in design docs.

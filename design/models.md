@@ -243,11 +243,11 @@ media type, split by task modalities (§11) plus a **lifecycle** axis:
 - Catalog entries carry `lifecycle: sync | async_job | session`. `session` models (realtime
   TTS/STT, S2S dialogue, Lyria RealTime — websocket-native) are **listed in the catalog but
   not invocable via the generation planes (`api_any.md` etc.)**; docs point to the future realtime plane
-  (`future-roadmap.md` §2). In the table below: `elevenlabs_scribe_v2_realtime` and
+  (`future_roadmap.md` §2). In the table below: `elevenlabs_scribe_v2_realtime` and
   `deepgram_flux` are `session`.
 - **VOICE is a future platform resource** (`voice_` prefix; designed / instant clone /
   professional clone / licensed library), not a task — v1 ships provider-preset voices only;
-  the resource lands with cloning (`future-roadmap.md` §3).
+  the resource lands with cloning (`future_roadmap.md` §3).
 - Rankings/jobs need no changes — batch audio flows through the existing pipeline untouched.
 - Rebrand note: Sonauto → **Treblo** (2026-06, `api.treblo.com`); slug stays `sonauto_v2`
   until they rename the model line itself.

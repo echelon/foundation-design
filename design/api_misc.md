@@ -8,7 +8,7 @@
 the specific endpoint groups that have no dedicated sibling doc — catalog, files, billing,
 account/team/keys, MCP mount, public. Whole-API-shape conventions (auth, versioning, errors,
 webhook signing): `api_overview.md`. Endpoints are served across three ingress binaries per
-`microservices.md`. Base URL placeholder: `https://api.example.dev`.
+`microservices.md`. Base URL placeholder: `https://api.example.com`.
 
 ---
 

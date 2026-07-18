@@ -4,14 +4,14 @@ This directory is the human/assistant pairing workspace for the Foundation desig
 
 ## Layout
 
-| Path        | Purpose                                                                    |
-| ----------- | -------------------------------------------------------------------------- |
-| `design/`   | The living design decisions. These are the documents we execute against    |
-| `reports/`  | One-off research answers and explainers. Immutable once delivered; superseded by new reports, not edited. **New reports land in `reports/` root**; bt files them into subfolders |
-| `reports/read/` | Reports bt has processed. Immutable                                     |
-| `reports/evergreen/` | Living reference reports (e.g. competitors) — the exception: these ARE updated in place on request |
-| `reports/later/before-v1/`, `.../after-v1/` | Parked for revisit at that horizon             |
-| `2026-07/`  | Dated historical drafts. Do not edit                                        |
+| Path                                        | Purpose                                                                                                                                                                          |
+| ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `design/`                                   | The living design decisions. These are the documents we execute against                                                                                                          |
+| `reports/`                                  | One-off research answers and explainers. Immutable once delivered; superseded by new reports, not edited. **New reports land in `reports/` root**; bt files them into subfolders |
+| `reports/read/`                             | Reports bt has processed. Immutable                                                                                                                                              |
+| `reports/evergreen/`                        | Living reference reports (e.g. competitors) — the exception: these ARE updated in place on request                                                                               |
+| `reports/later/before-v1/`, `.../after-v1/` | Parked for revisit at that horizon                                                                                                                                               |
+| `2026-07/`                                  | Dated historical drafts. Do not edit                                                                                                                                             |
 
 ## Sign-off protocol (design/ documents only)
 
@@ -69,9 +69,12 @@ Full registries: `design/conventions_naming.md` (names) and `design/conventions_
   `is_org_visible` — no bare enable-words (`enabled`), no `{x}_dismissed`/`{x}_truncated`.
 - **Every row-metadata `timestamptz` ends in `_at`** (2026-07-17): `created_at`, `canceled_at`,
   `revoked_at`. Sole exception: dimensional/key timestamps that are payload data (a rollup's
-  `period_start`) — see `design/conventions_naming.md` §4 / `conventions_coding.md` §7.
+  `period_start`) — see `design/conventions_naming.md` §4 / `conventions_database.md` §3.
+- **No database triggers; no actual FK constraints** (2026-07-17): `FK` in design-doc tables
+  means a *logical* reference enforced in code, never a `REFERENCES` clause — both make
+  migrations hard to reason about (`design/conventions_database.md` §1).
 
-Full registries live in `design/conventions_naming.md` §4 (`conventions_coding.md` §7 for
+Full registries live in `design/conventions_naming.md` §4 (`conventions_database.md` §3 for
 declaration order).
 
 ## Naming

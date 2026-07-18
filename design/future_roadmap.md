@@ -109,7 +109,7 @@ Roadmap items this pins:
 | ---------------------------- | --------------------------------------------------------------------- | ---------------------------------------------- | -------------------- |
 | Model aliases                | Launch with zero; add `short`/`rename`/`competitor` kinds when needed | Code-level alias map + rules already specified | `models.md` §12      |
 | Pinned snapshots / `_latest` | May not ship in v1; lint rules + catalog shape ready day one          | `models.md` §13 (DECIDED)                      | `models.md`          |
-| `end_user_limits`            | Per-end-user spend caps (customers ask for this eventually)           | Table sketched, prefix reserved (`eulimit_`)   | `end-users.md`       |
+| `end_user_limits`            | Per-end-user spend caps (customers ask for this eventually)           | Table sketched, prefix reserved (`eulimit_`)   | `end_users.md`       |
 | Email verification           | Dormant at launch; enabling = feature flag, not migration             | `email_verifications` table exists             | `accounts.md`        |
 | `job.started` webhook event  | Later event type alongside completed/failed                           | Events list is additive                        | `api_overview.md` §4 |
 

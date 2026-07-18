@@ -8,9 +8,9 @@
 conventions that apply to the WHOLE API surface — auth forms, versioning, the error envelope,
 generation-wide conventions, outbound webhook signing, reserved paths. Specific endpoint
 groups that have no home doc: `api_misc.md`. Endpoints are served across three ingress
-binaries per `microservices.md`. Base URL placeholder: `https://api.example.dev`. Siblings:
+binaries per `microservices.md`. Base URL placeholder: `https://api.example.com`. Siblings:
 `architecture.md`, `schema.md`, `models.md`, `enums.md`, `logging.md`, `mcp.md`,
-`end-users.md`, `rankings.md` — and the generation planes: `api_any.md`,
+`end_users.md`, `rankings.md` — and the generation planes: `api_any.md`,
 `api_model_specific.md`, `apis_llm.md`.
 
 ---
@@ -162,7 +162,7 @@ Shared across every plane:
 - All planes produce the same Job resource with `api_shape` recording the door used. Media
   is always async (polling or webhook — never held-open); text/chat is synchronous.
 - Optional on every shape: `"end_user": "<customer's own user id, ≤256 chars>"` — never
-  required; see `end-users.md`.
+  required; see `end_users.md`.
 
 **Cost response:**
 

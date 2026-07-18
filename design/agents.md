@@ -75,7 +75,7 @@ Both, cheaply, same files:
 
 1. **Primary: Netlify (docs app).** The Nx docs app's build step copies `generated/llms/` into
    its static publish directory. Canonical URLs live on the docs domain
-   (`docs.example.dev/llms.txt`, `docs.example.dev/models/{id}/llms.txt`). CDN-cached, zero
+   (`docs.example.com/llms.txt`, `docs.example.com/models/{id}/llms.txt`). CDN-cached, zero
    backend load — right place for high-volume agent slurping.
 2. **Convenience: api-gateway.** Agents habitually probe the API host itself. Axum serves
    `GET /llms.txt` and `GET /v1/llms.txt` as 308 redirects to the docs-domain canonical (one
