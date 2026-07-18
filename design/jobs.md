@@ -52,7 +52,7 @@ OpenRouter); punted explicitly (`../reports/jobs-design-considerations-2.md` §4
 | `succeeded` | yes      | Set only AFTER outputs are ingested into our storage — succeeded ⇒ URLs are durable, ours                                                                                              |
 | `failed`    | yes      | `failure_code` says why; auto-refunded                                                                                                                                                 |
 | `canceled`  | yes      | `canceled_by` says who                                                                                                                                                                 |
-| `expired`   | yes      | Passed `expires_at` before completion; auto-refunded                                                                                                                                   |
+| `expired`   | yes      | Passed `expires_at` before completion                                                                                                                                                  |
 
 ### The two-stage queue (naming OPEN)
 
@@ -61,10 +61,10 @@ provider's (their task id exists). The **recommendation** (full analysis + rejec
 alternatives in `../reports/jobs-design-considerations-2.md` §1) is to expose **one `queued`
 status plus a `queue_stage` detail field** rather than two similar-sounding statuses:
 
-| `queue_stage`    | Meaning                                                     |
-| ---------------- | ----------------------------------------------------------- |
-| `at_our_gateway` | In OUR queue: charged, dispatch pending (incl. 429 backoff) |
-| `at_provider`    | Accepted upstream; sitting in the PROVIDER's queue          |
+| `queue_stage`    | Meaning                                                         |
+| ---------------- | --------------------------------------------------------------- |
+| `at_our_gateway` | In OUR queue: charged, dispatch pending (incl. 429/529 backoff) |
+| `at_provider`    | Accepted upstream; sitting in the PROVIDER's queue              |
 
 This matches the field (Fal collapses everything pre-runner into `IN_QUEUE`; nobody exposes a
 two-tier queue as statuses), keeps the customer state machine at six values, and dissolves
@@ -109,7 +109,7 @@ What we DO retry, invisibly, under a stable status:
 
 | Situation                                                      | Behavior                                                                                                                                                                                                                                |
 | -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Provider 429 / capacity at dispatch                            | Job stays `queued` (stage `at_our_gateway`); backoff via `next_dispatch_at`; each attempt is a `job_events` entry; exhaustion → `failed` with `provider_capacity`                                                                       |
+| Provider 429 / 529 / capacity at dispatch                      | Job stays `queued` (stage `at_our_gateway`); backoff via `next_dispatch_at`; each attempt is a `job_events` entry; exhaustion → `failed` with `provider_capacity`                                                                       |
 | Transient infra error at dispatch (conn/5xx before acceptance) | Same — safe to retry, nothing charged upstream yet                                                                                                                                                                                      |
 | Provider accepted, then failed                                 | **Fail fast**: `failed` + refund. No cross-provider re-dispatch of an accepted job — uniform retry semantics across providers is a tar pit (each upstream bills/retries differently); the refund + re-enqueue path is honest and simple |
 
@@ -251,7 +251,7 @@ zero or more outputs.
 
 ## 5. API
 
-**Sign-off:** _unsigned_
+**Sign-off:** bt 2026-07-18
 
 Moved from `api.md` §4 (2026-07-05). Conventions (auth, pagination, errors) stay in `api_overview.md`.
 
@@ -259,10 +259,10 @@ Moved from `api.md` §4 (2026-07-05). Conventions (auth, pagination, errors) sta
 | -------------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `/v1/jobs/{job_id}`        | GET    | Full job: status, params echo, outputs, cost                                                                                                           |
 | `/v1/jobs/{job_id}/status` | GET    | Lightweight status-only (cheap poll)                                                                                                                   |
-| `/v1/jobs`                 | GET    | List; filters: status, model, media_type, source, api_key, end_user, time range                                                                        |
-| `/v1/jobs/{job_id}/cancel` | POST   | Cancel if not terminal (full refund if still in our queue; after provider acceptance, refund policy is per-provider — most upstreams charge us anyway) |
-| `/v1/jobs/{job_id}/logs`   | GET    | Merged debug timeline — the logs product (`logging.md`)                                                                                                |
+| `/v1/jobs/{job_id}/cost`   | GET    | Lightweight cost-only, typically frozen but may be updated for some job categories                                                                     |
+| `/v1/jobs`                 | GET    | Paginated List; filters: status, model, media_type, source, api_key, end_user, time range                                                              |
 
-Failed and expired jobs are auto-refunded (ledger `job_refund`) — **of what was actually
+Failed and expired jobs sometimes are auto-refunded (ledger `job_refund`) — **of what was actually
 charged**: metered jobs that failed before their completion-time charge have no charge and
-produce no refund entry (payments.md §6). No retry endpoint (§3).
+produce no refund entry (payments.md §6). No retry endpoint (§3). Most jobs and models do not refund, 
+only a select few do.
